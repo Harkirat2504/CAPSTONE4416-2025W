@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JFK Weather & Power Forecast</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <!-- Google Fonts: Roboto -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet" />
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: "Roboto", sans-serif;
+            background: linear-gradient(135deg, #6dd5ed, #2193b0);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            display: flex;
+            /* Aligns elements in a row */
+            flex-direction: row;
+            /* Ensure horizontal alignment */
+            justify-content: center;
+            /* Center items horizontally */
+            align-items: center;
+            /* Center items vertically */
+            gap: 30px;
+            /* Adds space between the cards */
+            width: 100%;
+            max-width: 900px;
+            /* Prevents excessive stretching */
+            margin: auto;
+        }
+
+        .card-custom {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            text-align: center;
+            color: #fff;
+            width: 350px;
+            max-width: 100%;
+        }
+
+
+        .list-group-item {
+            background: transparent;
+            color: #fff;
+            border: none;
+        }
+
+        .error-message {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Wind Speed Forecast Card -->
+        <div class="card-custom">
+            <h2>JFK Airport Wind Speed Forecast</h2>
+            <ul id="windSpeedForecast" class="list-group list-unstyled"></ul>
+        </div>
+
+        <!-- Power Generation Card -->
+        <div class="card-custom">
+            <h2>Windmill Power Output</h2>
+            <canvas id="powerChart" width="350" height="200"></canvas>
+            <p class="mt-3" id="totalPower">Total Power: -- kW</p>
+        </div>
+    </div>
+
+    <!-- Bootstrap Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        const apiEndpoint = "https://capstone4416-2025w-machinelearningmodel.onrender.com/predict";
+
+        async function fetchWindSpeedForecast() {
+            try {
+                const response = await fetch(apiEndpoint);
+                if (!response.ok) {
+                    throw new Error("Failed to fetch wind speed data");
+                }
+                const data = await response.json();
+                updateWindSpeedForecast(data);
+                simulatePowerGeneration(data);
+            } catch (error) {
+                console.error("Error fetching wind speed data:", error);
+                document.getElementById("windSpeedForecast").innerHTML =
+                    "<li class='list-group-item error-message'>Error loading wind speed data</li>";
+            }
+        }
+
+        function updateWindSpeedForecast(data) {
+            const forecastList = document.getElementById("windSpeedForecast");
+            forecastList.innerHTML = ""; // Clear existing content
+
+            for (let i = 1; i <= 7; i++) {
+                if (data[`day_${i}`] !== undefined) {
+                    forecastList.innerHTML += `<li class="list-group-item">Day ${i}: ${data[`day_${i}`]} m/s</li>`;
+                }
+            }
+        }
+
+        function simulatePowerGeneration(data) {
+            const cutInSpeed = 3;   // m/s
+            const ratedSpeed = 12;  // m/s
+            const ratedPower = 100; // kW per turbine
+            const numberOfTurbines = 5;
+
+            let totalPowerOutput = 0;
+            let individualPowers = [];
+
+            for (let i = 1; i <= 7; i++) {
+                let windSpeed = data[`day_${i}`];
+                let turbinePower = 0;
+
+                if (windSpeed >= cutInSpeed) {
+                    if (windSpeed >= ratedSpeed) {
+                        turbinePower = ratedPower;
+                    } else {
+                        turbinePower = ratedPower * Math.pow((windSpeed - cutInSpeed) / (ratedSpeed - cutInSpeed), 3);
+                    }
+                }
+
+                individualPowers.push(turbinePower.toFixed(1));
+                totalPowerOutput += turbinePower;
+            }
+
+            document.getElementById("totalPower").textContent =
+                "Total Power: " + (totalPowerOutput * numberOfTurbines).toFixed(1) + " kW";
+
+            updatePowerChart(individualPowers, totalPowerOutput * numberOfTurbines);
+        }
+
+        let powerChart;
+        function updatePowerChart(individualPowers, totalPower) {
+            const ctx = document.getElementById("powerChart").getContext("2d");
+            const chartData = {
+                labels: ["Day 1", "Day 2", "Day 3", "Day 4", "Day 5", "Day 6", "Day 7"],
+                datasets: [{
+                    label: "Power Output per Windmill (kW)",
+                    data: individualPowers,
+                    backgroundColor: "rgba(54, 162, 235, 0.6)",
+                    borderColor: "rgba(54, 162, 235, 1)",
+                    borderWidth: 1
+                }]
+            };
+
+            if (powerChart) {
+                powerChart.data = chartData;
+                powerChart.update();
+            } else {
+                powerChart = new Chart(ctx, {
+                    type: "bar",
+                    data: chartData,
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { color: "#fff" }
+                            }
+                        },
+                        plugins: {
+                            legend: { labels: { color: "#fff" } }
+                        }
+                    }
+                });
+            }
+        }
+
+        window.onload = fetchWindSpeedForecast;
+    </script>
+</body>
+
+</html>
