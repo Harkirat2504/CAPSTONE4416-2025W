@@ -29,20 +29,16 @@
 
         .container {
             display: flex;
-            /* Aligns elements in a row */
             flex-direction: row;
-            /* Ensure horizontal alignment */
+            /* Align items in a row */
             justify-content: center;
-            /* Center items horizontally */
-            align-items: center;
-            /* Center items vertically */
+            align-items: flex-start;
             gap: 30px;
-            /* Adds space between the cards */
             width: 100%;
-            max-width: 900px;
-            /* Prevents excessive stretching */
+            max-width: 1100px;
             margin: auto;
         }
+
 
         .card-custom {
             background: rgba(255, 255, 255, 0.15);
@@ -71,6 +67,12 @@
 </head>
 
 <body>
+    <!-- Temperature Forecast Card -->
+    <div class="card-custom">
+        <h2>JFK Temperature Forecast</h2>
+        <ul id="temperatureForecast" class="list-group list-unstyled"></ul>
+    </div>
+
     <div class="container">
         <!-- Wind Speed Forecast Card -->
         <div class="card-custom">
@@ -90,7 +92,13 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
+
+
         const apiEndpoint = "https://capstone4416-2025w-machinelearningmodel.onrender.com/predict";
+        const weatherApiKey = "de2900d886627a5c2fd04359694ede4e"; // Your API Key
+        const lat = 40.6413; // JFK Airport Latitude
+        const lon = -73.7781; // JFK Airport Longitude
+        const weatherApiUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${weatherApiKey}`;
 
         async function fetchWindSpeedForecast() {
             try {
@@ -108,6 +116,21 @@
             }
         }
 
+        async function fetchTemperatureForecast() {
+            try {
+                const response = await fetch(weatherApiUrl);
+                if (!response.ok) {
+                    throw new Error("Failed to fetch temperature data");
+                }
+                const data = await response.json();
+                updateTemperatureForecast(data);
+            } catch (error) {
+                console.error("Error fetching temperature data:", error);
+                document.getElementById("temperatureForecast").innerHTML =
+                    "<li class='list-group-item error-message'>Error loading temperature data</li>";
+            }
+        }
+
         function updateWindSpeedForecast(data) {
             const forecastList = document.getElementById("windSpeedForecast");
             forecastList.innerHTML = ""; // Clear existing content
@@ -116,6 +139,35 @@
                 if (data[`day_${i}`] !== undefined) {
                     forecastList.innerHTML += `<li class="list-group-item">Day ${i}: ${data[`day_${i}`]} m/s</li>`;
                 }
+            }
+        }
+
+        function updateTemperatureForecast(data) {
+            const forecastList = document.getElementById("temperatureForecast");
+            forecastList.innerHTML = ""; // Clear existing content
+
+            const dailyData = {};
+
+            // Extract daily temperature from the 3-hour interval forecast
+            data.list.forEach(entry => {
+                const date = entry.dt_txt.split(" ")[0]; // Extract date
+                if (!dailyData[date]) {
+                    dailyData[date] = {
+                        temp: entry.main.temp,
+                        icon: entry.weather[0].icon
+                    };
+                }
+            });
+
+            let i = 1;
+            for (const [date, value] of Object.entries(dailyData)) {
+                if (i > 7) break; // Limit to 7 days
+                forecastList.innerHTML += `
+            <li class="list-group-item">
+                <img src="https://openweathermap.org/img/wn/${value.icon}@2x.png" alt="Weather Icon">
+                Day ${i}: ${value.temp.toFixed(1)}°C
+            </li>`;
+                i++;
             }
         }
 
@@ -186,7 +238,12 @@
             }
         }
 
-        window.onload = fetchWindSpeedForecast;
+        // Run both weather & temperature fetch when the page loads
+        window.onload = () => {
+            fetchWindSpeedForecast();
+            fetchTemperatureForecast();
+        };
+
     </script>
 </body>
 
