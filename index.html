@@ -253,10 +253,8 @@
         }
 
         // Run both weather & temperature fetch when the page loads
-        window.onload = () => {
-            fetchWindSpeedForecast();
-            fetchTemperatureForecast();
-        };
+        window.onload = fetchForecastData;
+
 
     </script>
 </body>
