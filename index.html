@@ -148,4 +148,28 @@
                 }]
             };
 
-    
+            if (demandChart) {
+                demandChart.data = chartData;
+                demandChart.update();
+            } else {
+                demandChart = new Chart(ctx, {
+                    type: "bar",
+                    data: chartData,
+                    options: {
+                        scales: {
+                            y: { beginAtZero: true, ticks: { color: "#fff" } }
+                        },
+                        plugins: {
+                            legend: { labels: { color: "#fff" } }
+                        }
+                    }
+                });
+            }
+        }
+
+        // Fetch the forecast data when the page loads
+        window.onload = fetchForecastData;
+    </script>
+</body>
+
+</html>
