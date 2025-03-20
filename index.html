@@ -72,15 +72,15 @@
             <ul id="ontarioForecast" class="list-group list-unstyled"></ul>
         </div>
 
-        <!-- London Demand Forecast Card -->
+        <!-- Toronto Demand Forecast Card -->
         <div class="card-custom">
-            <h2>London Energy Demand Forecast</h2>
-            <ul id="londonForecast" class="list-group list-unstyled"></ul>
+            <h2>Toronto Energy Demand Forecast</h2>
+            <ul id="torontoForecast" class="list-group list-unstyled"></ul>
         </div>
 
         <!-- Demand Chart Card -->
         <div class="card-custom">
-            <h2>London Demand Chart</h2>
+            <h2>Toronto Demand Chart</h2>
             <canvas id="demandChart" width="350" height="200"></canvas>
         </div>
     </div>
@@ -101,14 +101,14 @@
                 const data = await response.json();
 
                 updateOntarioForecast(data.ontario_demand);
-                updateLondonForecast(data.london_demand);
-                updateDemandChart(data.london_demand);
+                updateTorontoForecast(data.toronto_demand);
+                updateDemandChart(data.toronto_demand);
             } catch (error) {
                 console.error("Error fetching forecast data:", error);
                 document.getElementById("ontarioForecast").innerHTML =
                     "<li class='list-group-item error-message'>Error loading Ontario demand data</li>";
-                document.getElementById("londonForecast").innerHTML =
-                    "<li class='list-group-item error-message'>Error loading London demand data</li>";
+                document.getElementById("torontoForecast").innerHTML =
+                    "<li class='list-group-item error-message'>Error loading Toronto demand data</li>";
             }
         }
 
@@ -122,8 +122,8 @@
             }
         }
 
-        function updateLondonForecast(demandData) {
-            const forecastList = document.getElementById("londonForecast");
+        function updateTorontoForecast(demandData) {
+            const forecastList = document.getElementById("torontoForecast");
             forecastList.innerHTML = ""; // Clear existing content
             for (let i = 1; i <= 7; i++) {
                 if (demandData[`day_${i}`] !== undefined) {
@@ -140,7 +140,7 @@
             const chartData = {
                 labels: labels,
                 datasets: [{
-                    label: "London Demand (MW)",
+                    label: "Toronto Demand (MW)",
                     data: data,
                     backgroundColor: "rgba(54, 162, 235, 0.6)",
                     borderColor: "rgba(54, 162, 235, 1)",
@@ -148,28 +148,4 @@
                 }]
             };
 
-            if (demandChart) {
-                demandChart.data = chartData;
-                demandChart.update();
-            } else {
-                demandChart = new Chart(ctx, {
-                    type: "bar",
-                    data: chartData,
-                    options: {
-                        scales: {
-                            y: { beginAtZero: true, ticks: { color: "#fff" } }
-                        },
-                        plugins: {
-                            legend: { labels: { color: "#fff" } }
-                        }
-                    }
-                });
-            }
-        }
-
-        // Fetch the forecast data when the page loads
-        window.onload = fetchForecastData;
-    </script>
-</body>
-
-</html>
+    
