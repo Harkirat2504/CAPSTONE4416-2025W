@@ -5,7 +5,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Ontario Energy Demand Forecast</title>
-
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
     <!-- Google Fonts: Roboto -->
@@ -14,7 +13,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
     <style>
         body {
             margin: 0;
@@ -29,9 +27,9 @@
 
         .container {
             display: flex;
-            flex-direction: row;
+            flex-direction: column;
             justify-content: center;
-            align-items: flex-start;
+            align-items: center;
             gap: 30px;
             width: 100%;
             max-width: 1200px;
@@ -64,42 +62,48 @@
 </head>
 
 <body>
-
     <div class="container">
-        <!-- Ontario Demand Forecast Card -->
-        <div class="card-custom">
-            <h2>Ontario Energy Demand Forecast</h2>
-            <ul id="ontarioForecast" class="list-group list-unstyled"></ul>
-        </div>
-
-        <!-- Toronto Demand Forecast Card -->
-        <div class="card-custom">
-            <h2>Toronto Energy Demand Forecast</h2>
-            <ul id="torontoForecast" class="list-group list-unstyled"></ul>
-        </div>
-
-        <!-- Demand Chart Card -->
-        <div class="card-custom">
-            <h2>Toronto Demand Chart</h2>
-            <canvas id="demandChart" width="350" height="200"></canvas>
+        <!-- Input Form -->
+        <form id="forecastForm" class="mb-3">
+            <div class="mb-2">
+                <input type="number" id="monthInput" placeholder="Month (1-12)" min="1" max="12" required>
+            </div>
+            <div class="mb-2">
+                <input type="number" id="startDayInput" placeholder="Start Day" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Get Forecast</button>
+        </form>
+        <div class="d-flex flex-wrap gap-3 justify-content-center">
+            <!-- Ontario Demand Forecast Card -->
+            <div class="card-custom">
+                <h2>Ontario Energy Demand Forecast</h2>
+                <ul id="ontarioForecast" class="list-group list-unstyled"></ul>
+            </div>
+            <!-- Toronto Demand Forecast Card -->
+            <div class="card-custom">
+                <h2>Toronto Energy Demand Forecast</h2>
+                <ul id="torontoForecast" class="list-group list-unstyled"></ul>
+            </div>
+            <!-- Demand Chart Card -->
+            <div class="card-custom">
+                <h2>Toronto Demand Chart</h2>
+                <canvas id="demandChart" width="350" height="200"></canvas>
+            </div>
         </div>
     </div>
-
     <!-- Bootstrap Bundle JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
     <script>
-        // Set this to your deployed API endpoint
         const apiEndpoint = "https://capstone4416-2025w-machinelearningmodel.onrender.com/predict";
 
-        async function fetchForecastData() {
+        async function fetchForecastData(params) {
             try {
-                const response = await fetch(apiEndpoint);
+                const queryString = new URLSearchParams(params).toString();
+                const response = await fetch(`${apiEndpoint}?${queryString}`);
                 if (!response.ok) {
                     throw new Error("Failed to fetch forecast data");
                 }
                 const data = await response.json();
-
                 updateOntarioForecast(data.ontario_demand);
                 updateTorontoForecast(data.toronto_demand);
                 updateDemandChart(data.toronto_demand);
@@ -114,7 +118,7 @@
 
         function updateOntarioForecast(demandData) {
             const forecastList = document.getElementById("ontarioForecast");
-            forecastList.innerHTML = ""; // Clear existing content
+            forecastList.innerHTML = "";
             for (let i = 1; i <= 7; i++) {
                 if (demandData[`day_${i}`] !== undefined) {
                     forecastList.innerHTML += `<li class="list-group-item">Day ${i}: ${demandData[`day_${i}`]} MW</li>`;
@@ -124,7 +128,7 @@
 
         function updateTorontoForecast(demandData) {
             const forecastList = document.getElementById("torontoForecast");
-            forecastList.innerHTML = ""; // Clear existing content
+            forecastList.innerHTML = "";
             for (let i = 1; i <= 7; i++) {
                 if (demandData[`day_${i}`] !== undefined) {
                     forecastList.innerHTML += `<li class="list-group-item">Day ${i}: ${demandData[`day_${i}`]} MW</li>`;
@@ -167,8 +171,12 @@
             }
         }
 
-        // Fetch the forecast data when the page loads
-        window.onload = fetchForecastData;
+        document.getElementById("forecastForm").addEventListener("submit", function (e) {
+            e.preventDefault();
+            const month = document.getElementById("monthInput").value;
+            const start_day = document.getElementById("startDayInput").value;
+            fetchForecastData({ month, start_day });
+        });
     </script>
 </body>
 
