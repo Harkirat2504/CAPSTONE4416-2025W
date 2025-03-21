@@ -42,11 +42,9 @@
             padding: 30px;
             text-align: center;
             color: #fff;
-            width: 400px;
-            height: 400px;
+            width: 350px;
             display: flex;
             flex-direction: column;
-            align-items: center;
         }
 
         .chart-container {
@@ -68,20 +66,20 @@
         <form id="forecastForm" class="mb-3 d-flex flex-row gap-2">
             <input type="number" id="monthInput" placeholder="Month (1-12)" min="1" max="12" required>
             <input type="number" id="startDayInput" placeholder="Start Day" required>
-            <input type="text" id="locationInput" placeholder="Location (e.g. Toronto, Niagara)" required>
+            <input type="text" id="locationInput" placeholder="Location (e.g. Toronto)" required>
             <button type="submit" class="btn btn-primary">Get Forecast</button>
         </form>
 
         <div class="d-flex flex-wrap gap-3 justify-content-center">
-            <!-- Left Card: Requested Location Chart -->
-            <div class="card-custom">
-                <h2 id="locationTitle">Location Demand</h2>
-                <div class="chart-container">
-                    <canvas id="locationChart"></canvas>
-                </div>
+            <!-- Left Card: Forecast Results (User's Location) -->
+            <div class="card-custom" id="forecastResults">
+                <h2 id="resultsTitle">Forecast Results</h2>
+                <!-- We'll insert the location data as a simple list -->
+                <ul id="resultsList" class="list-group list-unstyled" style="text-align:left;"></ul>
             </div>
+
             <!-- Right Card: Ontario Demand Chart -->
-            <div class="card-custom">
+            <div class="card-custom" style="width: 400px; height: 400px;">
                 <h2>Ontario Demand Chart</h2>
                 <div class="chart-container">
                     <canvas id="ontarioChart"></canvas>
@@ -92,13 +90,11 @@
 
     <!-- Bootstrap Bundle JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
     <script>
         const apiEndpoint = "https://capstone4416-2025w-machinelearningmodel.onrender.com/predict";
+        let ontarioChart; // For the Ontario Demand chart
 
-        let locationChart;
-        let ontarioChart;
-
+        // Helper to fetch data from the server
         async function fetchForecastData(params) {
             try {
                 const queryString = new URLSearchParams(params).toString();
@@ -113,28 +109,64 @@
             }
         }
 
-        function updateChart(chartRef, canvasId, chartLabel, dataObj) {
-            // dataObj = { day_1: <num>, day_2: <num>, ... }
-            const ctx = document.getElementById(canvasId).getContext("2d");
-            const labels = Object.keys(dataObj).sort(); // day_1, day_2, ...
-            const dataValues = labels.map(day => dataObj[day]);
+        // Display the user's requested location data in a simple list
+        function displayLocationResults(data, location) {
+            const resultsList = document.getElementById("resultsList");
+            resultsList.innerHTML = ""; // Clear old results
 
+            // data looks like:
+            // {
+            //   "day_1": { "Ontario Demand": 17700.35, "Toronto": 6615.03, "Niagara": 635.07 },
+            //   "day_2": { ... },
+            //   ...
+            // }
+            // We only want data[day_x][location].
+
+            // Build a list item for each day
+            Object.keys(data).sort().forEach(dayKey => {
+                const forecastObj = data[dayKey];
+                if (forecastObj[location] !== undefined) {
+                    // e.g. day_1 => forecastObj["Toronto"] = 6615.03
+                    const li = document.createElement("li");
+                    li.textContent = `${dayKey}: ${forecastObj[location].toFixed(2)} MW`;
+                    resultsList.appendChild(li);
+                }
+            });
+        }
+
+        // Update the Ontario Demand Chart
+        function updateOntarioChart(data) {
+            // data => the full object, day_x => { Ontario Demand, Toronto, etc. }
+            // We only want the "Ontario Demand" column for each day
+            const dayKeys = Object.keys(data).sort();
+            const labels = [];
+            const ontarioValues = [];
+
+            dayKeys.forEach(dayKey => {
+                const forecastObj = data[dayKey];
+                if (forecastObj["Ontario Demand"] !== undefined) {
+                    labels.push(dayKey);
+                    ontarioValues.push(forecastObj["Ontario Demand"]);
+                }
+            });
+
+            const ctx = document.getElementById("ontarioChart").getContext("2d");
             const chartData = {
                 labels,
                 datasets: [{
-                    label: chartLabel,
-                    data: dataValues,
+                    label: "Ontario Demand (MW)",
+                    data: ontarioValues,
                     backgroundColor: "rgba(54, 162, 235, 0.6)",
                     borderColor: "rgba(54, 162, 235, 1)",
                     borderWidth: 1
                 }]
             };
 
-            if (chartRef) {
-                chartRef.data = chartData;
-                chartRef.update();
+            if (ontarioChart) {
+                ontarioChart.data = chartData;
+                ontarioChart.update();
             } else {
-                chartRef = new Chart(ctx, {
+                ontarioChart = new Chart(ctx, {
                     type: "bar",
                     data: chartData,
                     options: {
@@ -149,7 +181,6 @@
                     }
                 });
             }
-            return chartRef;
         }
 
         document.getElementById("forecastForm").addEventListener("submit", async function (e) {
@@ -158,57 +189,24 @@
             const start_day = document.getElementById("startDayInput").value;
             const location = document.getElementById("locationInput").value.trim();
 
+            // Build query params
             const params = { month, start_day };
-            // We'll always return all columns, then pick out Ontario + location
-            // from the returned JSON
+            if (location) {
+                params.location = location;
+            }
+
+            // Fetch from the server
             const data = await fetchForecastData(params);
             if (data.error) {
                 alert(data.error);
                 return;
             }
 
-            // If user typed "Toronto", location is "Toronto"
-            // If user typed "Niagara", location is "Niagara", etc.
+            // 1) Display only the location data in the left card
+            displayLocationResults(data, location);
 
-            // Build two objects:
-            // 1) ontarioData = { day_1: 17700.35, day_2: 17298.64, ... }
-            // 2) locationData = { day_1: 6615.03, day_2: 6422.72, ... }
-
-            const ontarioData = {};
-            const locationData = {};
-
-            // rename the left chart title
-            document.getElementById("locationTitle").textContent = `${location} Demand`;
-
-            Object.keys(data).sort().forEach(dayKey => {
-                const forecastObj = data[dayKey];
-                if (forecastObj["Ontario Demand"] !== undefined) {
-                    ontarioData[dayKey] = forecastObj["Ontario Demand"];
-                }
-                if (forecastObj[location] !== undefined) {
-                    locationData[dayKey] = forecastObj[location];
-                } else {
-                    locationData[dayKey] = 0; // fallback if location not in data
-                }
-            });
-
-            // If we already had charts, destroy them so we can recreate
-            if (locationChart) {
-                locationChart.destroy();
-                locationChart = null;
-            }
-            if (ontarioChart) {
-                ontarioChart.destroy();
-                ontarioChart = null;
-            }
-
-            // Now create or update the two charts
-            locationChart = updateChart(locationChart, "locationChart",
-                `${location} Demand (MW)`, locationData
-            );
-            ontarioChart = updateChart(ontarioChart, "ontarioChart",
-                "Ontario Demand (MW)", ontarioData
-            );
+            // 2) Update the Ontario Demand chart on the right
+            updateOntarioChart(data);
         });
     </script>
 </body>
