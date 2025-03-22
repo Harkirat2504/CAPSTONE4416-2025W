@@ -5,6 +5,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Ontario Energy Demand Forecast</title>
+
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
     <!-- Google Fonts: Roboto -->
@@ -13,6 +14,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <style>
         body {
             margin: 0;
@@ -55,17 +57,25 @@
             width: 100%;
         }
 
-        .error-message {
-            color: red;
-            font-weight: bold;
+        form input,
+        form button {
+            height: 40px;
+            font-size: 16px;
+            border-radius: 8px;
+            padding: 5px 10px;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
         }
     </style>
 </head>
 
 <body>
-    <div class="container">
+    <div class="container text-center">
         <!-- Input Form -->
-        <form id="forecastForm" class="mb-3 d-flex flex-row gap-2">
+        <form id="forecastForm" class="mb-3 d-flex flex-wrap justify-content-center gap-2">
             <input type="number" id="monthInput" placeholder="Month (1-12)" min="1" max="12" required>
             <input type="number" id="startDayInput" placeholder="Start Day" required>
             <input type="text" id="locationInput" placeholder="Location (e.g. Toronto, Niagara)" required>
@@ -82,7 +92,7 @@
             </div>
             <!-- Right Card: Ontario Demand Chart -->
             <div class="card-custom">
-                <h2>Ontario Demand Chart</h2>
+                <h2>Ontario Demand</h2>
                 <div class="chart-container">
                     <canvas id="ontarioChart"></canvas>
                 </div>
@@ -113,11 +123,19 @@
             }
         }
 
-        function updateChart(chartRef, canvasId, chartLabel, dataObj) {
-            // dataObj = { day_1: <num>, day_2: <num>, ... }
+        function generateDateLabels(startMonth, startDay, numDays) {
+            const labels = [];
+            const year = new Date().getFullYear();
+            for (let i = 0; i < numDays; i++) {
+                const date = new Date(year, startMonth - 1, startDay + i);
+                const formatted = `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}`;
+                labels.push(formatted);
+            }
+            return labels;
+        }
+
+        function updateChart(chartRef, canvasId, chartLabel, labels, dataValues) {
             const ctx = document.getElementById(canvasId).getContext("2d");
-            const labels = Object.keys(dataObj).sort(); // day_1, day_2, ...
-            const dataValues = labels.map(day => dataObj[day]);
 
             const chartData = {
                 labels,
@@ -141,7 +159,8 @@
                         responsive: true,
                         maintainAspectRatio: false,
                         scales: {
-                            y: { beginAtZero: true, ticks: { color: "#fff" } }
+                            y: { beginAtZero: true, ticks: { color: "#fff" } },
+                            x: { ticks: { color: "#fff" } }
                         },
                         plugins: {
                             legend: { labels: { color: "#fff" } }
@@ -154,45 +173,31 @@
 
         document.getElementById("forecastForm").addEventListener("submit", async function (e) {
             e.preventDefault();
-            const month = document.getElementById("monthInput").value;
-            const start_day = document.getElementById("startDayInput").value;
+            const month = parseInt(document.getElementById("monthInput").value);
+            const start_day = parseInt(document.getElementById("startDayInput").value);
             const location = document.getElementById("locationInput").value.trim();
 
             const params = { month, start_day };
-            // We'll always return all columns, then pick out Ontario + location
-            // from the returned JSON
+
             const data = await fetchForecastData(params);
             if (data.error) {
                 alert(data.error);
                 return;
             }
 
-            // If user typed "Toronto", location is "Toronto"
-            // If user typed "Niagara", location is "Niagara", etc.
+            const ontarioData = [];
+            const locationData = [];
+            const sortedDays = Object.keys(data).sort();
+            const labels = generateDateLabels(month, start_day, sortedDays.length);
 
-            // Build two objects:
-            // 1) ontarioData = { day_1: 17700.35, day_2: 17298.64, ... }
-            // 2) locationData = { day_1: 6615.03, day_2: 6422.72, ... }
-
-            const ontarioData = {};
-            const locationData = {};
-
-            // rename the left chart title
             document.getElementById("locationTitle").textContent = `${location} Demand`;
 
-            Object.keys(data).sort().forEach(dayKey => {
+            sortedDays.forEach(dayKey => {
                 const forecastObj = data[dayKey];
-                if (forecastObj["Ontario Demand"] !== undefined) {
-                    ontarioData[dayKey] = forecastObj["Ontario Demand"];
-                }
-                if (forecastObj[location] !== undefined) {
-                    locationData[dayKey] = forecastObj[location];
-                } else {
-                    locationData[dayKey] = 0; // fallback if location not in data
-                }
+                ontarioData.push(forecastObj["Ontario Demand"] || 0);
+                locationData.push(forecastObj[location] || 0);
             });
 
-            // If we already had charts, destroy them so we can recreate
             if (locationChart) {
                 locationChart.destroy();
                 locationChart = null;
@@ -202,13 +207,8 @@
                 ontarioChart = null;
             }
 
-            // Now create or update the two charts
-            locationChart = updateChart(locationChart, "locationChart",
-                `${location} Demand (MW)`, locationData
-            );
-            ontarioChart = updateChart(ontarioChart, "ontarioChart",
-                "Ontario Demand (MW)", ontarioData
-            );
+            locationChart = updateChart(locationChart, "locationChart", `${location} Demand (MW)`, labels, locationData);
+            ontarioChart = updateChart(ontarioChart, "ontarioChart", "Ontario Demand (MW)", labels, ontarioData);
         });
     </script>
 </body>
