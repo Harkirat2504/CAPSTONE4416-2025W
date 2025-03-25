@@ -104,12 +104,12 @@
       </div>
       
       <!-- New Card: Energy Savings Chart -->
-      <div class="card-custom" style="width: 400px; height: 500px;">
+      <div class="card-custom" style="width: 400px; height: 400px;">
         <h2>Energy Savings Chart</h2>
         <div class="chart-container">
           <canvas id="savingsChart"></canvas>
         </div>
-        <p id="savingsTotals" style="margin-top:20px; font-size:1.2rem;"></p>
+        <p id="savingsTotals" style="font-size:1.2rem;"></p>
       </div>
     </div>
   </div>
@@ -212,29 +212,30 @@
     }
 
     // ------------------ Static Chart Section ------------------ //
-    // Function to create a static energy savings chart with two datasets (Energy Saved and Money Saved)
+    // Function to create a static energy savings chart with two datasets
     function createStaticSavingsChart() {
       const ctx = document.getElementById("savingsChart").getContext("2d");
 
       // Static data for April 1st - 7th, 2025
       const labels = ["04/01", "04/02", "04/03", "04/04", "04/05", "04/06", "04/07"];
       const energySaved = [50, 40, 30, 40, 45, 50, 55]; // in kWh
+      // Changed label from 'Daily Money Saved ($)' to 'Total Money Saved ($)'
       const moneySaved = [5, 10, 15, 20, 25, 35, 40]; // in dollars
 
-      // Calculate totals (using provided totals instead if needed)
-      const totalEnergy = 352; // as provided
-      const totalMoney = 52.80; // as provided
+      // Provided totals
+      const totalEnergy = 352;
+      const totalMoney = 52.8;
 
-      // Save totals to a paragraph element later
+      // Place totals in the paragraph (removed margin-top)
       document.getElementById("savingsTotals").textContent =
         `Total Energy Saved (April 1-7, 2025): ${totalEnergy} kWh | Total Money Saved (April 1-7, 2025): $${totalMoney}`;
 
-      // Create a chart with dual y-axes
       new Chart(ctx, {
         type: "bar",
         data: {
           labels: labels,
-          datasets: [{
+          datasets: [
+            {
               label: "Daily Energy Saved (kWh)",
               data: energySaved,
               backgroundColor: "rgba(54, 162, 235, 0.6)",
@@ -243,7 +244,7 @@
               yAxisID: "y-energy"
             },
             {
-              label: "Daily Money Saved ($)",
+              label: "Total Money Saved ($)",
               data: moneySaved,
               backgroundColor: "rgba(255, 206, 86, 0.6)",
               borderColor: "rgba(255, 206, 86, 1)",
@@ -308,9 +309,8 @@
       updateOntarioChart(data, labels);
     });
 
-    // When the page loads, create the static energy savings chart
+    // On page load, create the static energy savings chart
     window.addEventListener("load", createStaticSavingsChart);
   </script>
 </body>
-
 </html>
