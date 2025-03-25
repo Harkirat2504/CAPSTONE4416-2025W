@@ -55,12 +55,14 @@
       width: 100%;
     }
 
-    form input,
-    form button {
+    /* Style for dropdowns and button */
+    select,
+    button {
       height: 40px;
       font-size: 16px;
       border-radius: 8px;
       padding: 5px 10px;
+      margin: 0 5px;
     }
 
     h2 {
@@ -80,11 +82,51 @@
 
 <body>
   <div class="container text-center">
-    <!-- Input Form -->
+    <!-- Input Form with Dropdowns -->
     <form id="forecastForm" class="mb-3 d-flex flex-wrap justify-content-center gap-2">
-      <input type="number" id="monthInput" placeholder="Month (1-12)" min="1" max="12" required>
-      <input type="number" id="startDayInput" placeholder="Start Day" min="1" max="31" required>
-      <input type="text" id="locationInput" placeholder="Location (e.g. Toronto)" required>
+      <!-- Month Dropdown -->
+      <select id="monthSelect" required>
+        <option value="" disabled selected>Month</option>
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+        <option value="6">6</option>
+        <option value="7">7</option>
+        <option value="8">8</option>
+        <option value="9">9</option>
+        <option value="10">10</option>
+        <option value="11">11</option>
+        <option value="12">12</option>
+      </select>
+
+      <!-- Day Dropdown -->
+      <select id="daySelect" required>
+        <option value="" disabled selected>Day</option>
+        <!-- 1 through 31 -->
+        <script>
+          for (let d = 1; d <= 31; d++) {
+            document.write(`<option value="${d}">${d}</option>`);
+          }
+        </script>
+      </select>
+
+      <!-- Location Dropdown -->
+      <select id="locationSelect" required>
+        <option value="" disabled selected>Location</option>
+        <option value="Northwest">Northwest</option>
+        <option value="Northeast">Northeast</option>
+        <option value="Ottawa">Ottawa</option>
+        <option value="East">East</option>
+        <option value="Toronto">Toronto</option>
+        <option value="Essa">Essa</option>
+        <option value="Bruce">Bruce</option>
+        <option value="Southwest">Southwest</option>
+        <option value="Niagara">Niagara</option>
+        <option value="West">West</option>
+      </select>
+
       <button type="submit" class="btn btn-primary">Get Forecast</button>
     </form>
 
@@ -102,7 +144,7 @@
           <canvas id="ontarioChart"></canvas>
         </div>
       </div>
-      
+
       <!-- New Card: Energy Savings Chart -->
       <div class="card-custom" style="width: 400px; height: 400px;">
         <h2>Energy Savings Chart</h2>
@@ -120,7 +162,7 @@
     const apiEndpoint = "https://capstone4416-2025w-machinelearningmodel.onrender.com/predict";
     let ontarioChart; // For the Ontario Demand chart
 
-    // Helper to fetch forecast data from server (kept unchanged)
+    // Helper to fetch forecast data from server
     async function fetchForecastData(params) {
       try {
         const queryString = new URLSearchParams(params).toString();
@@ -212,21 +254,17 @@
     }
 
     // ------------------ Static Chart Section ------------------ //
-    // Function to create a static energy savings chart with two datasets
     function createStaticSavingsChart() {
       const ctx = document.getElementById("savingsChart").getContext("2d");
 
       // Static data for April 1st - 7th, 2025
       const labels = ["04/01", "04/02", "04/03", "04/04", "04/05", "04/06", "04/07"];
       const energySaved = [50, 40, 30, 40, 45, 50, 55]; // in kWh
-      // Changed label from 'Daily Money Saved ($)' to 'Total Money Saved ($)'
       const moneySaved = [5, 10, 15, 20, 25, 35, 40]; // in dollars
 
-      // Provided totals
       const totalEnergy = 352;
       const totalMoney = 52.8;
 
-      // Place totals in the paragraph (removed margin-top)
       document.getElementById("savingsTotals").textContent =
         `Total Energy Saved (April 1-7, 2025): ${totalEnergy} kWh | Total Money Saved (April 1-7, 2025): $${totalMoney}`;
 
@@ -284,12 +322,12 @@
     }
     // ---------------- End Static Chart Section ---------------- //
 
-    // Form submission event
+    // On form submission, fetch and display forecast data
     document.getElementById("forecastForm").addEventListener("submit", async function (e) {
       e.preventDefault();
-      const month = parseInt(document.getElementById("monthInput").value);
-      const start_day = parseInt(document.getElementById("startDayInput").value);
-      const location = document.getElementById("locationInput").value.trim();
+      const month = parseInt(document.getElementById("monthSelect").value);
+      const start_day = parseInt(document.getElementById("daySelect").value);
+      const location = document.getElementById("locationSelect").value.trim();
 
       const params = { month, start_day };
 
@@ -302,10 +340,10 @@
       const sortedDays = Object.keys(data).sort();
       const labels = generateDateLabels(month, start_day, sortedDays.length);
 
-      // 1) Display only the location data in the left card
+      // Display only the location data in the left card
       displayLocationResults(data, location, labels);
 
-      // 2) Update the Ontario Demand chart on the right
+      // Update the Ontario Demand chart on the right
       updateOntarioChart(data, labels);
     });
 
@@ -314,3 +352,4 @@
   </script>
 </body>
 </html>
+
