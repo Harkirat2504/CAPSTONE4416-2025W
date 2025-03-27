@@ -19,7 +19,7 @@
     body {
       margin: 0;
       padding: 50px 0 0;
-      /* Added top padding */
+      /* Top padding added */
       font-family: "Roboto", sans-serif;
       background: linear-gradient(135deg, #6dd5ed, #2193b0);
       display: flex;
@@ -32,6 +32,18 @@
       width: 100%;
       max-width: 1200px;
       margin: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .grid-container {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      /* 3 columns */
+      grid-auto-rows: 400px;
+      /* uniform height */
+      gap: 20px;
     }
 
     .card-custom {
@@ -42,16 +54,14 @@
       padding: 30px;
       text-align: center;
       color: #fff;
-      /* Removed fixed width for grid uniformity */
+      display: flex;
+      flex-direction: column;
     }
 
-    /* Grid container for the six cards (3 columns x 2 rows) */
-    .grid-container {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      grid-auto-rows: 400px;
-      gap: 20px;
-      margin-top: 20px;
+    .chart-container {
+      flex: 1;
+      position: relative;
+      width: 100%;
     }
 
     select,
@@ -124,7 +134,7 @@
       <button type="submit" class="btn btn-primary">Get Forecast</button>
     </form>
 
-    <!-- Grid container for the six cards -->
+    <!-- Grid container for the six cards arranged as 3 columns x 2 rows -->
     <div class="grid-container">
       <!-- Left Card: Daily Forecast List (searched location) -->
       <div class="card-custom" id="forecastResults">
