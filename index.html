@@ -364,28 +364,27 @@
     // New: Update Daily Energy Saved Bar Chart and Daily & Cumulative Money Saved Line Chart
     // using data from the /turbine endpoint.
     function updateEnergyAndSavingsCharts(turbineData) {
-      // turbineData is an object with keys "1" to "24"
-      // Compute daily energy saved as the sum of hourly turbine outputs.
-      const hourlyOutputs = Object.values(turbineData);
-      const dailyEnergySaved = hourlyOutputs.reduce((sum, val) => sum + val, 0);
+      // Use daily data from turbineData.daily
+      const dailyData = turbineData.daily;
+      // Sort day keys (e.g., "day_1", "day_2", etc.) numerically
+      const dayKeys = Object.keys(dailyData).sort((a, b) => {
+        return parseInt(a.split('_')[1]) - parseInt(b.split('_')[1]);
+      });
+      // Create daily energy array using the sorted keys
+      const dailyEnergyArray = dayKeys.map(key => dailyData[key]);
 
-      // Assume the same daily value for a 7-day period
-      const numDays = 7;
-      const dailyEnergyArray = Array(numDays).fill(dailyEnergySaved);
-
-      // Compute daily money saved (electricityCost in $/kWh)
-      const electricityCost = 0.15;
+      // Compute daily money saved using electricityCost (in $/kWh)
       const dailyMoneySavedArray = dailyEnergyArray.map(val => val * electricityCost);
 
-      // Compute cumulative money saved over 7 days
+      // Compute cumulative money saved over the days
       const cumulativeMoneySavedArray = [];
       dailyMoneySavedArray.reduce((acc, val, i) => {
         cumulativeMoneySavedArray[i] = acc + val;
         return cumulativeMoneySavedArray[i];
       }, 0);
 
-      // Generate labels for 7 days
-      const dayLabels = Array.from({ length: numDays }, (_, i) => `Day ${i + 1}`);
+      // Generate labels (e.g., "Day 1", "Day 2", etc.)
+      const dayLabels = dayKeys.map((_, i) => `Day ${i + 1}`);
 
       // --- Update Daily Energy Saved Chart (Bar Chart) ---
       const ctxEnergy = document.getElementById("energySavedChart").getContext("2d");
