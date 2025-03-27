@@ -57,12 +57,20 @@
       margin: 0 5px;
     }
 
-    ul#resultsList li {
+    /* Daily forecast results as columns */
+    .results-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    .result-col {
       background: rgba(255, 255, 255, 0.2);
-      margin-bottom: 10px;
-      padding: 8px 12px;
+      padding: 10px;
       border-radius: 8px;
-      color: #fff;
+      min-width: 80px;
+      margin: 5px;
     }
 
     /* Charts grid */
@@ -127,10 +135,10 @@
       <button type="submit" class="btn btn-primary">Get Forecast</button>
     </form>
 
-    <!-- Forecast Results (Daily) -->
+    <!-- Forecast Results (Daily) displayed as columns -->
     <div class="card-custom" id="forecastResults">
       <h2 id="resultsTitle">Forecast Results</h2>
-      <ul id="resultsList" class="list-group list-unstyled text-start"></ul>
+      <div id="resultsRow" class="results-row"></div>
     </div>
 
     <!-- Charts Grid -->
@@ -142,7 +150,6 @@
           <canvas id="dailyChart"></canvas>
         </div>
       </div>
-
       <!-- Card: Hourly Forecast Chart -->
       <div class="card-custom" style="width: 400px; height: 400px;">
         <h2>Hourly Forecast Chart</h2>
@@ -171,7 +178,7 @@
       let dailyChartInstance;
       let hourlyChartInstance;
 
-      // Helper to fetch forecast data from server
+      // Fetch forecast data from the server using given parameters
       async function fetchForecastData(params) {
         console.log("Fetching forecast data with params:", params);
         try {
@@ -187,7 +194,7 @@
         }
       }
 
-      // Helper to generate date labels (for daily forecast results)
+      // Generate date labels (for daily forecast)
       function generateDateLabels(startMonth, startDay, numDays) {
         const labels = [];
         const year = new Date().getFullYear();
@@ -199,7 +206,7 @@
         return labels;
       }
 
-      // Helper to generate hourly labels
+      // Generate hourly labels (for hourly forecast)
       function generateHourlyLabels(numHours) {
         const labels = [];
         for (let i = 1; i <= numHours; i++) {
@@ -208,23 +215,24 @@
         return labels;
       }
 
-      // Display forecast results for selected location (daily)
+      // Display daily forecast results as columns for the selected location
       function displayLocationResults(data, location, labels) {
-        const resultsList = document.getElementById("resultsList");
-        resultsList.innerHTML = "";
+        const resultsRow = document.getElementById("resultsRow");
+        resultsRow.innerHTML = "";
         const sortedDays = Object.keys(data).sort();
         sortedDays.forEach((dayKey, index) => {
           const forecastObj = data[dayKey];
           if (forecastObj[location] !== undefined) {
-            const li = document.createElement("li");
-            li.textContent = `${labels[index]}: ${forecastObj[location].toFixed(2)} MW`;
-            resultsList.appendChild(li);
+            const colDiv = document.createElement("div");
+            colDiv.className = "result-col";
+            colDiv.textContent = `${labels[index]}: ${forecastObj[location].toFixed(2)} MW`;
+            resultsRow.appendChild(colDiv);
           }
         });
         document.getElementById("resultsTitle").textContent = `${location} Daily Forecast`;
       }
 
-      // Update the Daily Forecast Chart
+      // Update Daily Forecast Chart (bar chart)
       function updateDailyChart(data, labels) {
         const sortedDays = Object.keys(data).sort();
         const dailyValues = [];
@@ -272,7 +280,7 @@
         }
       }
 
-      // Update the Hourly Forecast Chart
+      // Update Hourly Forecast Chart (line chart)
       function updateHourlyChart(data, labels) {
         const sortedHours = Object.keys(data).sort((a, b) => parseInt(a) - parseInt(b));
         const hourlyValues = [];
@@ -320,7 +328,7 @@
         }
       }
 
-      // Function to automatically send forecast data to the local Python server (for Arduino)
+      // Automatically send daily forecast data to Arduino
       async function sendForecastToArduino() {
         const location = document.getElementById("locationSelect").value.trim();
         if (!globalDailyData || !location) {
@@ -357,7 +365,6 @@
         const start_day = parseInt(document.getElementById("daySelect").value);
         const location = document.getElementById("locationSelect").value.trim();
 
-        // Set parameters for daily and hourly forecasts
         const dailyParams = { month, start_day, mode: "daily" };
         const hourlyParams = { month, start_day, mode: "hourly" };
 
@@ -384,11 +391,11 @@
         const hourlyLabels = generateHourlyLabels(sortedHourlyHours.length);
         updateHourlyChart(hourlyData, hourlyLabels);
 
-        // Automatically send the daily forecast data to Arduino
+        // Immediately send daily forecast data to Arduino
         sendForecastToArduino();
       });
 
-      // On page load: start the live clock
+      // Start the live clock on page load
       window.addEventListener("load", () => {
         setInterval(updateClock, 1000);
       });
