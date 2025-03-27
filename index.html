@@ -19,7 +19,7 @@
     body {
       margin: 0;
       padding: 50px 0 0;
-      /* Top padding added */
+      /* Top padding */
       font-family: "Roboto", sans-serif;
       background: linear-gradient(135deg, #6dd5ed, #2193b0);
       display: flex;
@@ -42,7 +42,7 @@
       grid-template-columns: repeat(3, 1fr);
       /* 3 columns */
       grid-auto-rows: 400px;
-      /* uniform height */
+      /* uniform height for cards */
       gap: 20px;
     }
 
@@ -56,6 +56,17 @@
       color: #fff;
       display: flex;
       flex-direction: column;
+    }
+
+    /* Make the results list scroll if it exceeds a certain height */
+    #resultsList {
+      max-height: 280px;
+      /* Adjust as needed */
+      overflow-y: auto;
+      margin: 0;
+      /* Remove default UL margin */
+      padding: 0;
+      /* Remove default UL padding */
     }
 
     .chart-container {
@@ -84,6 +95,8 @@
       padding: 8px 12px;
       border-radius: 8px;
       color: #fff;
+      list-style: none;
+      /* Remove bullet points */
     }
   </style>
 </head>
@@ -134,12 +147,12 @@
       <button type="submit" class="btn btn-primary">Get Forecast</button>
     </form>
 
-    <!-- Grid container for the six cards arranged as 3 columns x 2 rows -->
+    <!-- Grid container for the six cards (3 columns x 2 rows) -->
     <div class="grid-container">
       <!-- Left Card: Daily Forecast List (searched location) -->
       <div class="card-custom" id="forecastResults">
         <h2 id="resultsTitle">Daily Forecast (Searched Location)</h2>
-        <ul id="resultsList" class="list-group list-unstyled text-start"></ul>
+        <ul id="resultsList"></ul>
       </div>
 
       <!-- Middle Card: Daily Ontario Demand Chart -->
