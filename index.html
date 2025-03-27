@@ -81,7 +81,7 @@
 
 <body>
   <div class="container text-center">
-    <!-- Input Form with Dropdowns -->
+    <!-- Input Form -->
     <form id="forecastForm" class="mb-3 d-flex flex-wrap justify-content-center gap-2">
       <!-- Month Dropdown -->
       <select id="monthSelect" required>
@@ -99,18 +99,15 @@
         <option value="11">11</option>
         <option value="12">12</option>
       </select>
-
       <!-- Day Dropdown -->
       <select id="daySelect" required>
         <option value="" disabled selected>Day</option>
-        <!-- 1 through 31 -->
         <script>
           for (let d = 1; d <= 31; d++) {
             document.write(`<option value="${d}">${d}</option>`);
           }
         </script>
       </select>
-
       <!-- Location Dropdown -->
       <select id="locationSelect" required>
         <option value="" disabled selected>Location</option>
@@ -125,28 +122,27 @@
         <option value="Niagara">Niagara</option>
         <option value="West">West</option>
       </select>
-
       <button type="submit" class="btn btn-primary">Get Forecast</button>
     </form>
 
     <div class="d-flex flex-wrap gap-3 justify-content-center">
-      <!-- Left Card: Forecast Results (User's Location) -->
+      <!-- Left Card: Daily Forecast List (searched location) -->
       <div class="card-custom" id="forecastResults">
-        <h2 id="resultsTitle">Forecast Results</h2>
+        <h2 id="resultsTitle">Daily Forecast (Searched Location)</h2>
         <ul id="resultsList" class="list-group list-unstyled text-start"></ul>
       </div>
 
-      <!-- Right Card: Ontario Demand Chart -->
+      <!-- Middle Card: Daily Bar Graph (Ontario Demand) -->
       <div class="card-custom" style="width: 400px; height: 400px;">
-        <h2>Ontario Demand Chart</h2>
+        <h2>Daily Ontario Demand Chart</h2>
         <div class="chart-container">
           <canvas id="ontarioChart"></canvas>
         </div>
       </div>
 
-      <!-- New Card: Hourly Forecast Chart -->
+      <!-- Right Card: Hourly Chart (searched location) -->
       <div class="card-custom" style="width: 400px; height: 400px;">
-        <h2>Hourly Forecast Chart</h2>
+        <h2>Hourly Forecast (Searched Location)</h2>
         <div class="chart-container">
           <canvas id="hourlyChart"></canvas>
         </div>
@@ -159,8 +155,8 @@
   <script>
     // API endpoint for your Python backend on Render
     const apiEndpoint = "https://capstone4416-2025w-machinelearningmodel.onrender.com/predict";
-    let ontarioChart; // Chart instance for Ontario Demand
-    let hourlyChart;  // Chart instance for Hourly Forecast
+    let ontarioChart; // Chart for daily Ontario Demand (middle card)
+    let hourlyChart;  // Chart for hourly forecast (searched location, right card)
 
     // Helper: fetch forecast data from the server
     async function fetchForecastData(params) {
@@ -189,7 +185,7 @@
       return labels;
     }
 
-    // Helper: generate hourly labels (e.g., 1 to 24)
+    // Helper: generate hourly labels (1 to 24)
     function generateHourlyLabels(numHours) {
       const labels = [];
       for (let i = 1; i <= numHours; i++) {
@@ -198,10 +194,10 @@
       return labels;
     }
 
-    // Display the user's requested location forecast in a list
+    // Display daily forecast list for searched location (left card)
     function displayLocationResults(data, location, labels) {
       const resultsList = document.getElementById("resultsList");
-      resultsList.innerHTML = ""; // Clear old results
+      resultsList.innerHTML = "";
       const sortedDays = Object.keys(data).sort();
       sortedDays.forEach((dayKey, index) => {
         const forecastObj = data[dayKey];
@@ -211,14 +207,14 @@
           resultsList.appendChild(li);
         }
       });
-      document.getElementById("resultsTitle").textContent = `${location} Forecast Results`;
+      document.getElementById("resultsTitle").textContent = `${location} Daily Forecast`;
     }
 
-    // Update the Ontario Demand Chart (bar chart for daily data)
+    // Update daily bar graph for Ontario Demand (middle card)
     function updateOntarioChart(data, labels) {
       const sortedDays = Object.keys(data).sort();
       const ontarioValues = [];
-      sortedDays.forEach((dayKey) => {
+      sortedDays.forEach(dayKey => {
         const forecastObj = data[dayKey];
         if (forecastObj["Ontario Demand"] !== undefined) {
           ontarioValues.push(forecastObj["Ontario Demand"]);
@@ -246,40 +242,34 @@
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-              y: {
-                beginAtZero: true,
-                ticks: { color: "#fff" }
-              },
-              x: {
-                ticks: { color: "#fff" }
-              }
+              y: { beginAtZero: true, ticks: { color: "#fff" } },
+              x: { ticks: { color: "#fff" } }
             },
-            plugins: {
-              legend: { labels: { color: "#fff" } }
-            }
+            plugins: { legend: { labels: { color: "#fff" } } }
           }
         });
       }
     }
 
-    // Update the Hourly Forecast Chart (line chart for hourly data)
-    function updateHourlyChart(data, labels) {
+    // Update hourly chart for searched location (right card)
+    function updateHourlyLocationChart(data, location, labels) {
+      // Extract hourly forecast values for the searched location.
       const sortedHours = Object.keys(data).sort((a, b) => parseInt(a) - parseInt(b));
-      const hourlyValues = [];
-      sortedHours.forEach((hour) => {
-        const forecastObj = data[hour];
-        if (forecastObj["Ontario Demand"] !== undefined) {
-          hourlyValues.push(forecastObj["Ontario Demand"]);
+      const locationHourlyValues = [];
+      sortedHours.forEach(hourKey => {
+        const forecastObj = data[hourKey];
+        if (forecastObj[location] !== undefined) {
+          locationHourlyValues.push(forecastObj[location]);
         }
       });
       const ctx = document.getElementById("hourlyChart").getContext("2d");
       const chartData = {
         labels,
         datasets: [{
-          label: "Hourly Ontario Demand (MW)",
-          data: hourlyValues,
-          backgroundColor: "rgba(255, 99, 132, 0.6)",
-          borderColor: "rgba(255, 99, 132, 1)",
+          label: `${location} Hourly Forecast (MW)`,
+          data: locationHourlyValues,
+          backgroundColor: "rgba(255, 159, 64, 0.6)",
+          borderColor: "rgba(255, 159, 64, 1)",
           borderWidth: 1
         }]
       };
@@ -294,30 +284,23 @@
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-              y: {
-                beginAtZero: true,
-                ticks: { color: "#fff" }
-              },
-              x: {
-                ticks: { color: "#fff" }
-              }
+              y: { beginAtZero: true, ticks: { color: "#fff" } },
+              x: { ticks: { color: "#fff" } }
             },
-            plugins: {
-              legend: { labels: { color: "#fff" } }
-            }
+            plugins: { legend: { labels: { color: "#fff" } } }
           }
         });
       }
     }
 
-    // On form submission, fetch daily and hourly forecast data and update the UI
+    // On form submission, fetch daily and hourly data and update UI
     document.getElementById("forecastForm").addEventListener("submit", async function (e) {
       e.preventDefault();
       const month = parseInt(document.getElementById("monthSelect").value);
       const start_day = parseInt(document.getElementById("daySelect").value);
       const location = document.getElementById("locationSelect").value.trim();
 
-      // Daily forecast: backend defaults to daily (7-day) forecast if no mode is provided.
+      // Daily forecast (7-day) – default mode
       const dailyParams = { month, start_day };
       const dailyData = await fetchForecastData(dailyParams);
       if (dailyData.error) {
@@ -326,10 +309,12 @@
       }
       const sortedDays = Object.keys(dailyData).sort();
       const dailyLabels = generateDateLabels(month, start_day, sortedDays.length);
+      // Update left card: display daily forecast list for searched location
       displayLocationResults(dailyData, location, dailyLabels);
+      // Update middle card: daily bar graph for Ontario Demand
       updateOntarioChart(dailyData, dailyLabels);
 
-      // Hourly forecast: include mode parameter as "hourly" for 24-hour forecast.
+      // Hourly forecast: using mode "hourly" for 24-hour data
       const hourlyParams = { month, start_day, mode: "hourly" };
       const hourlyData = await fetchForecastData(hourlyParams);
       if (hourlyData.error) {
@@ -338,7 +323,8 @@
       }
       const sortedHours = Object.keys(hourlyData).sort((a, b) => parseInt(a) - parseInt(b));
       const hourlyLabels = generateHourlyLabels(sortedHours.length);
-      updateHourlyChart(hourlyData, hourlyLabels);
+      // Update right card: hourly chart for searched location
+      updateHourlyLocationChart(hourlyData, location, hourlyLabels);
     });
   </script>
 </body>
