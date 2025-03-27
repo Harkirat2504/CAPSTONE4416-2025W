@@ -5,6 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Ontario Energy Demand Forecast</title>
+
   <!-- Bootstrap 5 CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
   <!-- Google Fonts: Roboto -->
@@ -13,6 +14,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <style>
     body {
       margin: 0;
@@ -79,7 +81,7 @@
 
 <body>
   <div class="container text-center">
-    <!-- Input Form with Dropdowns -->
+    <!-- Input Form -->
     <form id="forecastForm" class="mb-3 d-flex flex-wrap justify-content-center gap-2">
       <!-- Month Dropdown -->
       <select id="monthSelect" required>
@@ -97,18 +99,15 @@
         <option value="11">11</option>
         <option value="12">12</option>
       </select>
-
       <!-- Day Dropdown -->
       <select id="daySelect" required>
         <option value="" disabled selected>Day</option>
-        <!-- 1 through 31 -->
         <script>
           for (let d = 1; d <= 31; d++) {
             document.write(`<option value="${d}">${d}</option>`);
           }
         </script>
       </select>
-
       <!-- Location Dropdown -->
       <select id="locationSelect" required>
         <option value="" disabled selected>Location</option>
@@ -123,54 +122,29 @@
         <option value="Niagara">Niagara</option>
         <option value="West">West</option>
       </select>
-
       <button type="submit" class="btn btn-primary">Get Forecast</button>
     </form>
 
     <div class="d-flex flex-wrap gap-3 justify-content-center">
-<<<<<<< HEAD
-<<<<<<< HEAD
-      <!-- Left Card: Daily Forecast List for Searched Location -->
-=======
-      <!-- Left Card: Forecast Results (User's Location) -->
->>>>>>> parent of cff1f22 (Update index.html)
-=======
-      <!-- Left Card: Forecast Results (User's Location) -->
->>>>>>> parent of cff1f22 (Update index.html)
+      <!-- Left Card: Daily Forecast List (searched location) -->
       <div class="card-custom" id="forecastResults">
-        <h2 id="resultsTitle">Forecast Results</h2>
+        <h2 id="resultsTitle">Daily Forecast (Searched Location)</h2>
         <ul id="resultsList" class="list-group list-unstyled text-start"></ul>
       </div>
 
-      <!-- Right Card: Ontario Demand Chart -->
+      <!-- Middle Card: Daily Bar Graph (Ontario Demand) -->
       <div class="card-custom" style="width: 400px; height: 400px;">
-        <h2>Ontario Demand Chart</h2>
+        <h2>Daily Ontario Demand Chart</h2>
         <div class="chart-container">
           <canvas id="ontarioChart"></canvas>
         </div>
       </div>
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-      <!-- Right Card: Hourly Forecast Chart for Searched Location -->
-=======
-      <!-- New Card: Hourly Forecast Chart -->
->>>>>>> parent of cff1f22 (Update index.html)
-=======
-      <!-- New Card: Hourly Forecast Chart -->
->>>>>>> parent of cff1f22 (Update index.html)
+      <!-- Right Card: Hourly Chart (searched location) -->
       <div class="card-custom" style="width: 400px; height: 400px;">
-        <h2>Hourly Forecast Chart</h2>
+        <h2>Hourly Forecast (Searched Location)</h2>
         <div class="chart-container">
           <canvas id="hourlyChart"></canvas>
-        </div>
-      </div>
-
-      <!-- New Card: Daily Energy Difference Chart -->
-      <div class="card-custom" style="width: 400px; height: 400px;">
-        <h2>Daily Energy Difference</h2>
-        <div class="chart-container">
-          <canvas id="energyDiffChart"></canvas>
         </div>
       </div>
     </div>
@@ -181,19 +155,8 @@
   <script>
     // API endpoint for your Python backend on Render
     const apiEndpoint = "https://capstone4416-2025w-machinelearningmodel.onrender.com/predict";
-<<<<<<< HEAD
-<<<<<<< HEAD
-    let ontarioChart;    // Daily bar graph (Ontario Demand)
-    let hourlyChart;     // Hourly chart (searched location)
-    let energyDiffChart; // Energy difference chart
-=======
-    let ontarioChart; // Chart instance for Ontario Demand
-    let hourlyChart;  // Chart instance for Hourly Forecast
->>>>>>> parent of cff1f22 (Update index.html)
-=======
-    let ontarioChart; // Chart instance for Ontario Demand
-    let hourlyChart;  // Chart instance for Hourly Forecast
->>>>>>> parent of cff1f22 (Update index.html)
+    let ontarioChart; // Chart for daily Ontario Demand (middle card)
+    let hourlyChart;  // Chart for hourly forecast (searched location, right card)
 
     // Helper: fetch forecast data from the server
     async function fetchForecastData(params) {
@@ -222,7 +185,7 @@
       return labels;
     }
 
-    // Helper: generate hourly labels (e.g., 1 to 24)
+    // Helper: generate hourly labels (1 to 24)
     function generateHourlyLabels(numHours) {
       const labels = [];
       for (let i = 1; i <= numHours; i++) {
@@ -231,10 +194,10 @@
       return labels;
     }
 
-    // Display the user's requested location forecast in a list
+    // Display daily forecast list for searched location (left card)
     function displayLocationResults(data, location, labels) {
       const resultsList = document.getElementById("resultsList");
-      resultsList.innerHTML = ""; // Clear old results
+      resultsList.innerHTML = "";
       const sortedDays = Object.keys(data).sort();
       sortedDays.forEach((dayKey, index) => {
         const forecastObj = data[dayKey];
@@ -244,14 +207,14 @@
           resultsList.appendChild(li);
         }
       });
-      document.getElementById("resultsTitle").textContent = `${location} Forecast Results`;
+      document.getElementById("resultsTitle").textContent = `${location} Daily Forecast`;
     }
 
-    // Update the Ontario Demand Chart (bar chart for daily data)
+    // Update daily bar graph for Ontario Demand (middle card)
     function updateOntarioChart(data, labels) {
       const sortedDays = Object.keys(data).sort();
       const ontarioValues = [];
-      sortedDays.forEach((dayKey) => {
+      sortedDays.forEach(dayKey => {
         const forecastObj = data[dayKey];
         if (forecastObj["Ontario Demand"] !== undefined) {
           ontarioValues.push(forecastObj["Ontario Demand"]);
@@ -279,50 +242,34 @@
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-              y: {
-                beginAtZero: true,
-                ticks: { color: "#fff" }
-              },
-              x: {
-                ticks: { color: "#fff" }
-              }
+              y: { beginAtZero: true, ticks: { color: "#fff" } },
+              x: { ticks: { color: "#fff" } }
             },
-            plugins: {
-              legend: { labels: { color: "#fff" } }
-            }
+            plugins: { legend: { labels: { color: "#fff" } } }
           }
         });
       }
     }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
     // Update hourly chart for searched location (right card)
     function updateHourlyLocationChart(data, location, labels) {
-=======
-    // Update the Hourly Forecast Chart (line chart for hourly data)
-    function updateHourlyChart(data, labels) {
->>>>>>> parent of cff1f22 (Update index.html)
-=======
-    // Update the Hourly Forecast Chart (line chart for hourly data)
-    function updateHourlyChart(data, labels) {
->>>>>>> parent of cff1f22 (Update index.html)
+      // Extract hourly forecast values for the searched location.
       const sortedHours = Object.keys(data).sort((a, b) => parseInt(a) - parseInt(b));
-      const hourlyValues = [];
-      sortedHours.forEach((hour) => {
-        const forecastObj = data[hour];
-        if (forecastObj["Ontario Demand"] !== undefined) {
-          hourlyValues.push(forecastObj["Ontario Demand"]);
+      const locationHourlyValues = [];
+      sortedHours.forEach(hourKey => {
+        const forecastObj = data[hourKey];
+        if (forecastObj[location] !== undefined) {
+          locationHourlyValues.push(forecastObj[location]);
         }
       });
       const ctx = document.getElementById("hourlyChart").getContext("2d");
       const chartData = {
         labels,
         datasets: [{
-          label: "Hourly Ontario Demand (MW)",
-          data: hourlyValues,
-          backgroundColor: "rgba(255, 99, 132, 0.6)",
-          borderColor: "rgba(255, 99, 132, 1)",
+          label: `${location} Hourly Forecast (MW)`,
+          data: locationHourlyValues,
+          backgroundColor: "rgba(255, 159, 64, 0.6)",
+          borderColor: "rgba(255, 159, 64, 1)",
           borderWidth: 1
         }]
       };
@@ -337,93 +284,23 @@
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-              y: {
-                beginAtZero: true,
-                ticks: { color: "#fff" }
-              },
-              x: {
-                ticks: { color: "#fff" }
-              }
-<<<<<<< HEAD
-            },
-            plugins: {
-              legend: { labels: { color: "#fff" } }
-            }
-          }
-        });
-      }
-    }
-
-<<<<<<< HEAD
-    // Update energy difference chart (new card) using the API's model output
-    // Difference = (Ontario Demand) - (searched location forecast)
-    function updateEnergyDiffChart(data, location, labels) {
-      const sortedDays = Object.keys(data).sort();
-      const diffValues = [];
-      sortedDays.forEach(dayKey => {
-        const forecastObj = data[dayKey];
-        if (forecastObj["Ontario Demand"] !== undefined && forecastObj[location] !== undefined) {
-          diffValues.push(forecastObj["Ontario Demand"] - forecastObj[location]);
-        }
-      });
-      const ctx = document.getElementById("energyDiffChart").getContext("2d");
-      const chartData = {
-        labels,
-        datasets: [{
-          label: "Energy Difference (MW)",
-          data: diffValues,
-          backgroundColor: "rgba(75, 192, 192, 0.6)",
-          borderColor: "rgba(75, 192, 192, 1)",
-          borderWidth: 1
-        }]
-      };
-      if (energyDiffChart) {
-        energyDiffChart.data = chartData;
-        energyDiffChart.update();
-      } else {
-        energyDiffChart = new Chart(ctx, {
-          type: "bar",
-          data: chartData,
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
               y: { beginAtZero: true, ticks: { color: "#fff" } },
               x: { ticks: { color: "#fff" } }
-=======
->>>>>>> parent of cff1f22 (Update index.html)
             },
-            plugins: {
-              legend: { labels: { color: "#fff" } }
-            }
+            plugins: { legend: { labels: { color: "#fff" } } }
           }
         });
       }
     }
 
-<<<<<<< HEAD
-    // On form submission, fetch daily and hourly data and update UI using the API's model output
-=======
-    // On form submission, fetch daily and hourly forecast data and update the UI
->>>>>>> parent of cff1f22 (Update index.html)
-=======
-    // On form submission, fetch daily and hourly forecast data and update the UI
->>>>>>> parent of cff1f22 (Update index.html)
+    // On form submission, fetch daily and hourly data and update UI
     document.getElementById("forecastForm").addEventListener("submit", async function (e) {
       e.preventDefault();
       const month = parseInt(document.getElementById("monthSelect").value);
       const start_day = parseInt(document.getElementById("daySelect").value);
       const location = document.getElementById("locationSelect").value.trim();
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-      // Daily forecast (7-day) – default mode; API returns filtered output using model's predictions
-=======
-      // Daily forecast: backend defaults to daily (7-day) forecast if no mode is provided.
->>>>>>> parent of cff1f22 (Update index.html)
-=======
-      // Daily forecast: backend defaults to daily (7-day) forecast if no mode is provided.
->>>>>>> parent of cff1f22 (Update index.html)
+      // Daily forecast (7-day) – default mode
       const dailyParams = { month, start_day };
       const dailyData = await fetchForecastData(dailyParams);
       if (dailyData.error) {
@@ -432,30 +309,12 @@
       }
       const sortedDays = Object.keys(dailyData).sort();
       const dailyLabels = generateDateLabels(month, start_day, sortedDays.length);
-<<<<<<< HEAD
-<<<<<<< HEAD
-      // Left card: display daily forecast list for searched location
+      // Update left card: display daily forecast list for searched location
       displayLocationResults(dailyData, location, dailyLabels);
-      // Middle card: daily bar graph for Ontario Demand
-=======
-      displayLocationResults(dailyData, location, dailyLabels);
->>>>>>> parent of cff1f22 (Update index.html)
-=======
-      displayLocationResults(dailyData, location, dailyLabels);
->>>>>>> parent of cff1f22 (Update index.html)
+      // Update middle card: daily bar graph for Ontario Demand
       updateOntarioChart(dailyData, dailyLabels);
-      // New block: energy difference chart (model's Ontario Demand minus searched location forecast)
-      updateEnergyDiffChart(dailyData, location, dailyLabels);
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-      // Hourly forecast: mode "hourly" for 24-hour data
-=======
-      // Hourly forecast: include mode parameter as "hourly" for 24-hour forecast.
->>>>>>> parent of cff1f22 (Update index.html)
-=======
-      // Hourly forecast: include mode parameter as "hourly" for 24-hour forecast.
->>>>>>> parent of cff1f22 (Update index.html)
+      // Hourly forecast: using mode "hourly" for 24-hour data
       const hourlyParams = { month, start_day, mode: "hourly" };
       const hourlyData = await fetchForecastData(hourlyParams);
       if (hourlyData.error) {
@@ -464,16 +323,8 @@
       }
       const sortedHours = Object.keys(hourlyData).sort((a, b) => parseInt(a) - parseInt(b));
       const hourlyLabels = generateHourlyLabels(sortedHours.length);
-<<<<<<< HEAD
-<<<<<<< HEAD
-      // Right card: hourly chart for searched location
+      // Update right card: hourly chart for searched location
       updateHourlyLocationChart(hourlyData, location, hourlyLabels);
-=======
-      updateHourlyChart(hourlyData, hourlyLabels);
->>>>>>> parent of cff1f22 (Update index.html)
-=======
-      updateHourlyChart(hourlyData, hourlyLabels);
->>>>>>> parent of cff1f22 (Update index.html)
     });
   </script>
 </body>
