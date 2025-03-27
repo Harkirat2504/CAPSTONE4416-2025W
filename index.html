@@ -129,7 +129,11 @@
 
     <div class="d-flex flex-wrap gap-3 justify-content-center">
 <<<<<<< HEAD
+<<<<<<< HEAD
       <!-- Left Card: Daily Forecast List for Searched Location -->
+=======
+      <!-- Left Card: Forecast Results (User's Location) -->
+>>>>>>> parent of cff1f22 (Update index.html)
 =======
       <!-- Left Card: Forecast Results (User's Location) -->
 >>>>>>> parent of cff1f22 (Update index.html)
@@ -147,7 +151,11 @@
       </div>
 
 <<<<<<< HEAD
+<<<<<<< HEAD
       <!-- Right Card: Hourly Forecast Chart for Searched Location -->
+=======
+      <!-- New Card: Hourly Forecast Chart -->
+>>>>>>> parent of cff1f22 (Update index.html)
 =======
       <!-- New Card: Hourly Forecast Chart -->
 >>>>>>> parent of cff1f22 (Update index.html)
@@ -174,9 +182,14 @@
     // API endpoint for your Python backend on Render
     const apiEndpoint = "https://capstone4416-2025w-machinelearningmodel.onrender.com/predict";
 <<<<<<< HEAD
+<<<<<<< HEAD
     let ontarioChart;    // Daily bar graph (Ontario Demand)
     let hourlyChart;     // Hourly chart (searched location)
     let energyDiffChart; // Energy difference chart
+=======
+    let ontarioChart; // Chart instance for Ontario Demand
+    let hourlyChart;  // Chart instance for Hourly Forecast
+>>>>>>> parent of cff1f22 (Update index.html)
 =======
     let ontarioChart; // Chart instance for Ontario Demand
     let hourlyChart;  // Chart instance for Hourly Forecast
@@ -283,8 +296,13 @@
     }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     // Update hourly chart for searched location (right card)
     function updateHourlyLocationChart(data, location, labels) {
+=======
+    // Update the Hourly Forecast Chart (line chart for hourly data)
+    function updateHourlyChart(data, labels) {
+>>>>>>> parent of cff1f22 (Update index.html)
 =======
     // Update the Hourly Forecast Chart (line chart for hourly data)
     function updateHourlyChart(data, labels) {
@@ -326,6 +344,7 @@
               x: {
                 ticks: { color: "#fff" }
               }
+<<<<<<< HEAD
             },
             plugins: {
               legend: { labels: { color: "#fff" } }
@@ -371,14 +390,22 @@
             scales: {
               y: { beginAtZero: true, ticks: { color: "#fff" } },
               x: { ticks: { color: "#fff" } }
+=======
+>>>>>>> parent of cff1f22 (Update index.html)
             },
-            plugins: { legend: { labels: { color: "#fff" } } }
+            plugins: {
+              legend: { labels: { color: "#fff" } }
+            }
           }
         });
       }
     }
 
+<<<<<<< HEAD
     // On form submission, fetch daily and hourly data and update UI using the API's model output
+=======
+    // On form submission, fetch daily and hourly forecast data and update the UI
+>>>>>>> parent of cff1f22 (Update index.html)
 =======
     // On form submission, fetch daily and hourly forecast data and update the UI
 >>>>>>> parent of cff1f22 (Update index.html)
@@ -389,7 +416,11 @@
       const location = document.getElementById("locationSelect").value.trim();
 
 <<<<<<< HEAD
+<<<<<<< HEAD
       // Daily forecast (7-day) – default mode; API returns filtered output using model's predictions
+=======
+      // Daily forecast: backend defaults to daily (7-day) forecast if no mode is provided.
+>>>>>>> parent of cff1f22 (Update index.html)
 =======
       // Daily forecast: backend defaults to daily (7-day) forecast if no mode is provided.
 >>>>>>> parent of cff1f22 (Update index.html)
@@ -402,9 +433,13 @@
       const sortedDays = Object.keys(dailyData).sort();
       const dailyLabels = generateDateLabels(month, start_day, sortedDays.length);
 <<<<<<< HEAD
+<<<<<<< HEAD
       // Left card: display daily forecast list for searched location
       displayLocationResults(dailyData, location, dailyLabels);
       // Middle card: daily bar graph for Ontario Demand
+=======
+      displayLocationResults(dailyData, location, dailyLabels);
+>>>>>>> parent of cff1f22 (Update index.html)
 =======
       displayLocationResults(dailyData, location, dailyLabels);
 >>>>>>> parent of cff1f22 (Update index.html)
@@ -413,7 +448,11 @@
       updateEnergyDiffChart(dailyData, location, dailyLabels);
 
 <<<<<<< HEAD
+<<<<<<< HEAD
       // Hourly forecast: mode "hourly" for 24-hour data
+=======
+      // Hourly forecast: include mode parameter as "hourly" for 24-hour forecast.
+>>>>>>> parent of cff1f22 (Update index.html)
 =======
       // Hourly forecast: include mode parameter as "hourly" for 24-hour forecast.
 >>>>>>> parent of cff1f22 (Update index.html)
@@ -426,8 +465,12 @@
       const sortedHours = Object.keys(hourlyData).sort((a, b) => parseInt(a) - parseInt(b));
       const hourlyLabels = generateHourlyLabels(sortedHours.length);
 <<<<<<< HEAD
+<<<<<<< HEAD
       // Right card: hourly chart for searched location
       updateHourlyLocationChart(hourlyData, location, hourlyLabels);
+=======
+      updateHourlyChart(hourlyData, hourlyLabels);
+>>>>>>> parent of cff1f22 (Update index.html)
 =======
       updateHourlyChart(hourlyData, hourlyLabels);
 >>>>>>> parent of cff1f22 (Update index.html)
