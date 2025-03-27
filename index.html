@@ -1,16 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Ontario Energy Demand Forecast</title>
 
   <!-- Bootstrap 5 CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
   <!-- Google Fonts: Roboto -->
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet" />
   <!-- Font Awesome for Icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -78,6 +79,7 @@
     }
   </style>
 </head>
+
 <body>
   <div class="container text-center">
     <!-- Input Form with Dropdowns -->
@@ -159,7 +161,6 @@
   <script>
     const apiEndpoint = "https://capstone4416-2025w-machinelearningmodel.onrender.com/predict";
     let ontarioChart; // For the Ontario Demand chart
-    let globalForecastData = {}; // To store forecast data for sending automatically
 
     // Helper to fetch forecast data from server
     async function fetchForecastData(params) {
@@ -321,38 +322,7 @@
     }
     // ---------------- End Static Chart Section ---------------- //
 
-    // Function to automatically send forecast data to the local Python server
-    async function sendForecastToArduino() {
-      const location = document.getElementById("locationSelect").value.trim();
-      if (!globalForecastData || !location) {
-        console.warn("No forecast data or location not set yet.");
-        return;
-      }
-      // Build the payload from the forecast data for the selected region
-      const sortedDays = Object.keys(globalForecastData).sort();
-      const forecastArray = sortedDays.map(dayKey => {
-        return { date: dayKey, mw: globalForecastData[dayKey][location] };
-      });
-      const payload = {
-        region: location,
-        forecast: forecastArray
-      };
-      try {
-        const response = await fetch("http://localhost:3000/sendToArduino", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
-        const result = await response.json();
-        console.log("Response from Arduino server:", result);
-      } catch (error) {
-        console.error("Error sending forecast to Arduino:", error);
-      }
-    }
-
-    let globalForecastData = {};
-
-    // On form submission, fetch and display forecast data, then automatically send to Arduino
+    // On form submission, fetch and display forecast data
     document.getElementById("forecastForm").addEventListener("submit", async function (e) {
       e.preventDefault();
       const month = parseInt(document.getElementById("monthSelect").value);
@@ -367,21 +337,14 @@
         return;
       }
 
-      // Save the forecast data globally
-      globalForecastData = data;
-
-      // Generate labels for each day
       const sortedDays = Object.keys(data).sort();
       const labels = generateDateLabels(month, start_day, sortedDays.length);
 
-      // Display location data in the left card
+      // Display only the location data in the left card
       displayLocationResults(data, location, labels);
 
-      // Update the Ontario Demand chart
+      // Update the Ontario Demand chart on the right
       updateOntarioChart(data, labels);
-
-      // Immediately send the forecast data to Arduino
-      sendForecastToArduino();
     });
 
     // On page load, create the static energy savings chart
@@ -389,3 +352,4 @@
   </script>
 </body>
 </html>
+
