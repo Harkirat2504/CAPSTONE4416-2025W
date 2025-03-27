@@ -1,17 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Ontario Energy Demand Forecast</title>
 
   <!-- Bootstrap 5 CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
   <!-- Google Fonts: Roboto -->
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet"/>
   <!-- Font Awesome for Icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -55,7 +54,7 @@
       width: 100%;
     }
 
-    /* Style for dropdowns, buttons */
+    /* Style for dropdowns and button */
     select,
     button {
       height: 40px;
@@ -79,7 +78,6 @@
     }
   </style>
 </head>
-
 <body>
   <div class="container text-center">
     <!-- Input Form with Dropdowns -->
@@ -104,6 +102,7 @@
       <!-- Day Dropdown -->
       <select id="daySelect" required>
         <option value="" disabled selected>Day</option>
+        <!-- 1 through 31 -->
         <script>
           for (let d = 1; d <= 31; d++) {
             document.write(`<option value="${d}">${d}</option>`);
@@ -134,8 +133,6 @@
       <div class="card-custom" id="forecastResults">
         <h2 id="resultsTitle">Forecast Results</h2>
         <ul id="resultsList" class="list-group list-unstyled text-start"></ul>
-        <!-- New Button to Send Forecast Data to Arduino -->
-        <button id="sendToArduino" class="btn btn-success mt-2">Send Forecast to Arduino</button>
       </div>
 
       <!-- Right Card: Ontario Demand Chart -->
@@ -162,7 +159,7 @@
   <script>
     const apiEndpoint = "https://capstone4416-2025w-machinelearningmodel.onrender.com/predict";
     let ontarioChart; // For the Ontario Demand chart
-    let globalForecastData = {}; // To store forecast data for later sending
+    let globalForecastData = {}; // To store forecast data for sending automatically
 
     // Helper to fetch forecast data from server
     async function fetchForecastData(params) {
@@ -324,17 +321,14 @@
     }
     // ---------------- End Static Chart Section ---------------- //
 
-    // Function to send forecast data to the local Python server
+    // Function to automatically send forecast data to the local Python server
     async function sendForecastToArduino() {
-      // Assume that after a forecast is fetched, we stored the data in globalForecastData.
-      // Here we send the entire forecast for the selected region.
       const location = document.getElementById("locationSelect").value.trim();
       if (!globalForecastData || !location) {
-        alert("Forecast data or location not available");
+        console.warn("No forecast data or location not set yet.");
         return;
       }
-      // Prepare payload: here we send the forecast data as an array of objects.
-      // For example, extract data from globalForecastData
+      // Build the payload from the forecast data for the selected region
       const sortedDays = Object.keys(globalForecastData).sort();
       const forecastArray = sortedDays.map(dayKey => {
         return { date: dayKey, mw: globalForecastData[dayKey][location] };
@@ -356,7 +350,9 @@
       }
     }
 
-    // On form submission, fetch and display forecast data
+    let globalForecastData = {};
+
+    // On form submission, fetch and display forecast data, then automatically send to Arduino
     document.getElementById("forecastForm").addEventListener("submit", async function (e) {
       e.preventDefault();
       const month = parseInt(document.getElementById("monthSelect").value);
@@ -371,25 +367,25 @@
         return;
       }
 
-      // Save the forecast data globally so we can use it when sending to Arduino
+      // Save the forecast data globally
       globalForecastData = data;
 
+      // Generate labels for each day
       const sortedDays = Object.keys(data).sort();
       const labels = generateDateLabels(month, start_day, sortedDays.length);
 
-      // Display only the location data in the left card
+      // Display location data in the left card
       displayLocationResults(data, location, labels);
 
-      // Update the Ontario Demand chart on the right
+      // Update the Ontario Demand chart
       updateOntarioChart(data, labels);
+
+      // Immediately send the forecast data to Arduino
+      sendForecastToArduino();
     });
 
     // On page load, create the static energy savings chart
     window.addEventListener("load", createStaticSavingsChart);
-
-    // Add event listener for sending forecast data to Arduino (e.g., when a button is clicked)
-    document.getElementById("sendToArduino").addEventListener("click", sendForecastToArduino);
   </script>
 </body>
-
 </html>
