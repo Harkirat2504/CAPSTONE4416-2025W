@@ -19,7 +19,6 @@
     body {
       margin: 0;
       padding: 40px 0;
-      /* top padding for the entire page */
       font-family: "Roboto", sans-serif;
       background: linear-gradient(135deg, #6dd5ed, #2193b0);
       color: #fff;
@@ -177,295 +176,294 @@
 
   <!-- Bootstrap Bundle JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
   <script>
-    // Live Clock for Toronto
-    function updateClock() {
-      const now = new Date().toLocaleString("en-CA", { timeZone: "America/Toronto" });
-      document.getElementById("clockDisplay").innerText = `Toronto Time: ${now}`;
-    }
-    updateClock();
-    setInterval(updateClock, 1000);
-
-    const apiEndpoint = "https://capstone4416-2025w-machinelearningmodel.onrender.com/predict";
-    let globalDailyData = {};
-    let globalHourlyData = {};
-    let dailyChartInstance;
-    let hourlyChartInstance;
-
-    // Fetch forecast data from server
-    async function fetchForecastData(params) {
-      try {
-        const queryString = new URLSearchParams(params).toString();
-        const response = await fetch(`${apiEndpoint}?${queryString}`);
-        if (!response.ok) {
-          throw new Error("Failed to fetch forecast data");
-        }
-        return await response.json();
-      } catch (error) {
-        console.error("Error fetching forecast data:", error);
-        return { error: error.message };
+    document.addEventListener("DOMContentLoaded", function () {
+      // Live Clock for Toronto
+      function updateClock() {
+        const now = new Date().toLocaleString("en-CA", { timeZone: "America/Toronto" });
+        document.getElementById("clockDisplay").innerText = `Toronto Time: ${now}`;
       }
-    }
-
-    // Generate date labels for daily charts
-    function generateDateLabels(startMonth, startDay, numDays) {
-      const labels = [];
-      const year = new Date().getFullYear();
-      for (let i = 0; i < numDays; i++) {
-        const date = new Date(year, startMonth - 1, startDay + i);
-        const formatted = `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}`;
-        labels.push(formatted);
-      }
-      return labels;
-    }
-
-    // Generate hourly labels
-    function generateHourlyLabels(numHours) {
-      const labels = [];
-      for (let i = 1; i <= numHours; i++) {
-        labels.push(i.toString());
-      }
-      return labels;
-    }
-
-    // Display forecast results for selected location (daily)
-    function displayLocationResults(data, location, labels) {
-      const resultsList = document.getElementById("resultsList");
-      resultsList.innerHTML = "";
-      const sortedDays = Object.keys(data).sort();
-      sortedDays.forEach((dayKey, index) => {
-        const forecastObj = data[dayKey];
-        if (forecastObj[location] !== undefined) {
-          const li = document.createElement("li");
-          li.textContent = `${labels[index]}: ${forecastObj[location].toFixed(2)} MW`;
-          resultsList.appendChild(li);
-        }
-      });
-      document.getElementById("resultsTitle").textContent = `${location} Forecast Results`;
-    }
-
-    // Update the Daily Forecast Chart
-    function updateDailyChart(data, labels) {
-      const sortedDays = Object.keys(data).sort();
-      const dailyValues = [];
-      sortedDays.forEach((dayKey) => {
-        const forecastObj = data[dayKey];
-        if (forecastObj["Ontario Demand"] !== undefined) {
-          dailyValues.push(forecastObj["Ontario Demand"]);
-        }
-      });
-      const ctx = document.getElementById("dailyChart").getContext("2d");
-      const chartData = {
-        labels,
-        datasets: [{
-          label: "Daily Ontario Demand (MW)",
-          data: dailyValues,
-          backgroundColor: "rgba(54, 162, 235, 0.6)",
-          borderColor: "rgba(54, 162, 235, 1)",
-          borderWidth: 1
-        }]
-      };
-      if (dailyChartInstance) {
-        dailyChartInstance.data = chartData;
-        dailyChartInstance.update();
-      } else {
-        dailyChartInstance = new Chart(ctx, {
-          type: "bar",
-          data: chartData,
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-              y: {
-                beginAtZero: true,
-                ticks: { color: "#fff" }
-              },
-              x: {
-                ticks: { color: "#fff" }
-              }
-            },
-            plugins: {
-              legend: { labels: { color: "#fff" } }
-            }
-          }
-        });
-      }
-    }
-
-    // Update the Hourly Forecast Chart
-    function updateHourlyChart(data, labels) {
-      const sortedHours = Object.keys(data).sort((a, b) => parseInt(a) - parseInt(b));
-      const hourlyValues = [];
-      sortedHours.forEach(hour => {
-        const forecastObj = data[hour];
-        if (forecastObj["Ontario Demand"] !== undefined) {
-          hourlyValues.push(forecastObj["Ontario Demand"]);
-        }
-      });
-      const ctx = document.getElementById("hourlyChart").getContext("2d");
-      const chartData = {
-        labels: labels,
-        datasets: [{
-          label: "Hourly Ontario Demand (MW)",
-          data: hourlyValues,
-          backgroundColor: "rgba(255, 99, 132, 0.6)",
-          borderColor: "rgba(255, 99, 132, 1)",
-          borderWidth: 1
-        }]
-      };
-      if (hourlyChartInstance) {
-        hourlyChartInstance.data = chartData;
-        hourlyChartInstance.update();
-      } else {
-        hourlyChartInstance = new Chart(ctx, {
-          type: "line",
-          data: chartData,
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-              y: {
-                beginAtZero: true,
-                ticks: { color: "#fff" }
-              },
-              x: {
-                ticks: { color: "#fff" }
-              }
-            },
-            plugins: {
-              legend: { labels: { color: "#fff" } }
-            }
-          }
-        });
-      }
-    }
-
-    // Static Energy Savings Chart (for April 1-7, 2025)
-    function createStaticSavingsChart() {
-      const ctx = document.getElementById("savingsChart").getContext("2d");
-      const labels = ["04/01", "04/02", "04/03", "04/04", "04/05", "04/06", "04/07"];
-      const energySaved = [50, 40, 30, 40, 45, 50, 55]; // kWh
-      const moneySaved = [5, 10, 15, 20, 25, 35, 40]; // $
-      const totalEnergy = 352;
-      const totalMoney = 52.8;
-      document.getElementById("savingsTotals").textContent =
-        `Total Energy Saved (April 1-7, 2025): ${totalEnergy} kWh | Total Money Saved (April 1-7, 2025): $${totalMoney}`;
-      new Chart(ctx, {
-        type: "bar",
-        data: {
-          labels: labels,
-          datasets: [
-            {
-              label: "Daily Energy Saved (kWh)",
-              data: energySaved,
-              backgroundColor: "rgba(54, 162, 235, 0.6)",
-              borderColor: "rgba(54, 162, 235, 1)",
-              borderWidth: 1,
-              yAxisID: "y-energy"
-            },
-            {
-              label: "Total Money Saved ($)",
-              data: moneySaved,
-              backgroundColor: "rgba(255, 206, 86, 0.6)",
-              borderColor: "rgba(255, 206, 86, 1)",
-              borderWidth: 1,
-              type: "line",
-              fill: false,
-              yAxisID: "y-money"
-            }
-          ]
-        },
-        options: {
-          scales: {
-            "y-energy": {
-              type: "linear",
-              position: "left",
-              beginAtZero: true,
-              title: { display: true, text: "Energy (kWh)" }
-            },
-            "y-money": {
-              type: "linear",
-              position: "right",
-              beginAtZero: true,
-              grid: { drawOnChartArea: false },
-              title: { display: true, text: "Money ($)" }
-            }
-          }
-        }
-      });
-    }
-
-    // Function to automatically send forecast data to the local Python server (for Arduino)
-    async function sendForecastToArduino() {
-      const location = document.getElementById("locationSelect").value.trim();
-      if (!globalDailyData || !location) {
-        console.warn("No forecast data or location not set yet.");
-        return;
-      }
-      const sortedDays = Object.keys(globalDailyData).sort();
-      const forecastArray = sortedDays.map(dayKey => {
-        return { date: dayKey, mw: globalDailyData[dayKey][location] };
-      });
-      const payload = { region: location, forecast: forecastArray };
-      try {
-        const response = await fetch("http://localhost:3000/sendToArduino", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
-        const result = await response.json();
-        console.log("Response from Arduino server:", result);
-      } catch (error) {
-        console.error("Error sending forecast to Arduino:", error);
-      }
-    }
-
-    // Global objects to store forecast data
-    let globalDailyData = {};
-    let globalHourlyData = {};
-
-    // On form submission: fetch forecast data, update charts, and send data to Arduino
-    document.getElementById("forecastForm").addEventListener("submit", async function (e) {
-      e.preventDefault();
-      const month = parseInt(document.getElementById("monthSelect").value);
-      const start_day = parseInt(document.getElementById("daySelect").value);
-      const location = document.getElementById("locationSelect").value.trim();
-
-      // Set parameters for daily and hourly forecasts
-      const dailyParams = { month, start_day, mode: "daily" };
-      const hourlyParams = { month, start_day, mode: "hourly" };
-
-      // Fetch daily forecast data
-      const dailyData = await fetchForecastData(dailyParams);
-      if (dailyData.error) {
-        alert(dailyData.error);
-        return;
-      }
-      globalDailyData = dailyData;
-      const sortedDailyDays = Object.keys(dailyData).sort();
-      const dailyLabels = generateDateLabels(month, start_day, sortedDailyDays.length);
-      displayLocationResults(dailyData, location, dailyLabels);
-      updateDailyChart(dailyData, dailyLabels);
-
-      // Fetch hourly forecast data
-      const hourlyData = await fetchForecastData(hourlyParams);
-      if (hourlyData.error) {
-        alert(hourlyData.error);
-        return;
-      }
-      globalHourlyData = hourlyData;
-      const sortedHourlyHours = Object.keys(hourlyData).sort((a, b) => parseInt(a) - parseInt(b));
-      const hourlyLabels = generateHourlyLabels(sortedHourlyHours.length);
-      updateHourlyChart(hourlyData, hourlyLabels);
-
-      // Automatically send the daily forecast data to Arduino
-      sendForecastToArduino();
-    });
-
-    // On page load: create the static energy savings chart and start the live clock
-    window.addEventListener("load", () => {
-      createStaticSavingsChart();
+      updateClock();
       setInterval(updateClock, 1000);
+
+      const apiEndpoint = "https://capstone4416-2025w-machinelearningmodel.onrender.com/predict";
+      let globalDailyData = {};
+      let globalHourlyData = {};
+      let dailyChartInstance;
+      let hourlyChartInstance;
+
+      // Helper to fetch forecast data from server
+      async function fetchForecastData(params) {
+        try {
+          const queryString = new URLSearchParams(params).toString();
+          const response = await fetch(`${apiEndpoint}?${queryString}`);
+          if (!response.ok) {
+            throw new Error("Failed to fetch forecast data");
+          }
+          return await response.json();
+        } catch (error) {
+          console.error("Error fetching forecast data:", error);
+          return { error: error.message };
+        }
+      }
+
+      // Helper to generate date labels for daily charts
+      function generateDateLabels(startMonth, startDay, numDays) {
+        const labels = [];
+        const year = new Date().getFullYear();
+        for (let i = 0; i < numDays; i++) {
+          const date = new Date(year, startMonth - 1, startDay + i);
+          const formatted = `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}`;
+          labels.push(formatted);
+        }
+        return labels;
+      }
+
+      // Helper to generate hourly labels for hourly charts
+      function generateHourlyLabels(numHours) {
+        const labels = [];
+        for (let i = 1; i <= numHours; i++) {
+          labels.push(i.toString());
+        }
+        return labels;
+      }
+
+      // Display the user's requested location data in a simple list (daily forecast)
+      function displayLocationResults(data, location, labels) {
+        const resultsList = document.getElementById("resultsList");
+        resultsList.innerHTML = "";
+        const sortedDays = Object.keys(data).sort();
+        sortedDays.forEach((dayKey, index) => {
+          const forecastObj = data[dayKey];
+          if (forecastObj[location] !== undefined) {
+            const li = document.createElement("li");
+            li.textContent = `${labels[index]}: ${forecastObj[location].toFixed(2)} MW`;
+            resultsList.appendChild(li);
+          }
+        });
+        document.getElementById("resultsTitle").textContent = `${location} Forecast Results`;
+      }
+
+      // Update the Daily Forecast Chart
+      function updateDailyChart(data, labels) {
+        const sortedDays = Object.keys(data).sort();
+        const dailyValues = [];
+        sortedDays.forEach((dayKey) => {
+          const forecastObj = data[dayKey];
+          if (forecastObj["Ontario Demand"] !== undefined) {
+            dailyValues.push(forecastObj["Ontario Demand"]);
+          }
+        });
+        const ctx = document.getElementById("dailyChart").getContext("2d");
+        const chartData = {
+          labels,
+          datasets: [{
+            label: "Daily Ontario Demand (MW)",
+            data: dailyValues,
+            backgroundColor: "rgba(54, 162, 235, 0.6)",
+            borderColor: "rgba(54, 162, 235, 1)",
+            borderWidth: 1
+          }]
+        };
+        if (dailyChartInstance) {
+          dailyChartInstance.data = chartData;
+          dailyChartInstance.update();
+        } else {
+          dailyChartInstance = new Chart(ctx, {
+            type: "bar",
+            data: chartData,
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  ticks: { color: "#fff" }
+                },
+                x: {
+                  ticks: { color: "#fff" }
+                }
+              },
+              plugins: {
+                legend: { labels: { color: "#fff" } }
+              }
+            }
+          });
+        }
+      }
+
+      // Update the Hourly Forecast Chart
+      function updateHourlyChart(data, labels) {
+        const sortedHours = Object.keys(data).sort((a, b) => parseInt(a) - parseInt(b));
+        const hourlyValues = [];
+        sortedHours.forEach(hour => {
+          const forecastObj = data[hour];
+          if (forecastObj["Ontario Demand"] !== undefined) {
+            hourlyValues.push(forecastObj["Ontario Demand"]);
+          }
+        });
+        const ctx = document.getElementById("hourlyChart").getContext("2d");
+        const chartData = {
+          labels: labels,
+          datasets: [{
+            label: "Hourly Ontario Demand (MW)",
+            data: hourlyValues,
+            backgroundColor: "rgba(255, 99, 132, 0.6)",
+            borderColor: "rgba(255, 99, 132, 1)",
+            borderWidth: 1
+          }]
+        };
+        if (hourlyChartInstance) {
+          hourlyChartInstance.data = chartData;
+          hourlyChartInstance.update();
+        } else {
+          hourlyChartInstance = new Chart(ctx, {
+            type: "line",
+            data: chartData,
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  ticks: { color: "#fff" }
+                },
+                x: {
+                  ticks: { color: "#fff" }
+                }
+              },
+              plugins: {
+                legend: { labels: { color: "#fff" } }
+              }
+            }
+          });
+        }
+      }
+
+      // Static Energy Savings Chart (for April 1-7, 2025)
+      function createStaticSavingsChart() {
+        const ctx = document.getElementById("savingsChart").getContext("2d");
+        const labels = ["04/01", "04/02", "04/03", "04/04", "04/05", "04/06", "04/07"];
+        const energySaved = [50, 40, 30, 40, 45, 50, 55]; // kWh
+        const moneySaved = [5, 10, 15, 20, 25, 35, 40]; // $
+        const totalEnergy = 352;
+        const totalMoney = 52.8;
+        document.getElementById("savingsTotals").textContent =
+          `Total Energy Saved (April 1-7, 2025): ${totalEnergy} kWh | Total Money Saved (April 1-7, 2025): $${totalMoney}`;
+        new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: "Daily Energy Saved (kWh)",
+                data: energySaved,
+                backgroundColor: "rgba(54, 162, 235, 0.6)",
+                borderColor: "rgba(54, 162, 235, 1)",
+                borderWidth: 1,
+                yAxisID: "y-energy"
+              },
+              {
+                label: "Total Money Saved ($)",
+                data: moneySaved,
+                backgroundColor: "rgba(255, 206, 86, 0.6)",
+                borderColor: "rgba(255, 206, 86, 1)",
+                borderWidth: 1,
+                type: "line",
+                fill: false,
+                yAxisID: "y-money"
+              }
+            ]
+          },
+          options: {
+            scales: {
+              "y-energy": {
+                type: "linear",
+                position: "left",
+                beginAtZero: true,
+                title: { display: true, text: "Energy (kWh)" }
+              },
+              "y-money": {
+                type: "linear",
+                position: "right",
+                beginAtZero: true,
+                grid: { drawOnChartArea: false },
+                title: { display: true, text: "Money ($)" }
+              }
+            }
+          }
+        });
+      }
+
+      // Function to automatically send forecast data to the local Python server (for Arduino)
+      async function sendForecastToArduino() {
+        const location = document.getElementById("locationSelect").value.trim();
+        if (!globalDailyData || !location) {
+          console.warn("No forecast data or location not set yet.");
+          return;
+        }
+        const sortedDays = Object.keys(globalDailyData).sort();
+        const forecastArray = sortedDays.map(dayKey => {
+          return { date: dayKey, mw: globalDailyData[dayKey][location] };
+        });
+        const payload = { region: location, forecast: forecastArray };
+        try {
+          const response = await fetch("http://localhost:3000/sendToArduino", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          const result = await response.json();
+          console.log("Response from Arduino server:", result);
+        } catch (error) {
+          console.error("Error sending forecast to Arduino:", error);
+        }
+      }
+
+      // On form submission: fetch forecast data, update charts, and send data to Arduino
+      document.getElementById("forecastForm").addEventListener("submit", async function (e) {
+        e.preventDefault();
+        const month = parseInt(document.getElementById("monthSelect").value);
+        const start_day = parseInt(document.getElementById("daySelect").value);
+        const location = document.getElementById("locationSelect").value.trim();
+
+        // Set parameters for daily and hourly forecasts
+        const dailyParams = { month, start_day, mode: "daily" };
+        const hourlyParams = { month, start_day, mode: "hourly" };
+
+        // Fetch daily forecast data
+        const dailyData = await fetchForecastData(dailyParams);
+        if (dailyData.error) {
+          alert(dailyData.error);
+          return;
+        }
+        globalDailyData = dailyData;
+        const sortedDailyDays = Object.keys(dailyData).sort();
+        const dailyLabels = generateDateLabels(month, start_day, sortedDailyDays.length);
+        displayLocationResults(dailyData, location, dailyLabels);
+        updateDailyChart(dailyData, dailyLabels);
+
+        // Fetch hourly forecast data
+        const hourlyData = await fetchForecastData(hourlyParams);
+        if (hourlyData.error) {
+          alert(hourlyData.error);
+          return;
+        }
+        globalHourlyData = hourlyData;
+        const sortedHourlyHours = Object.keys(hourlyData).sort((a, b) => parseInt(a) - parseInt(b));
+        const hourlyLabels = generateHourlyLabels(sortedHourlyHours.length);
+        updateHourlyChart(hourlyData, hourlyLabels);
+
+        // Automatically send the daily forecast data to Arduino
+        sendForecastToArduino();
+      });
+
+      // On page load: create the static energy savings chart and start the live clock
+      window.addEventListener("load", () => {
+        createStaticSavingsChart();
+        setInterval(updateClock, 1000);
+      });
     });
   </script>
 </body>
