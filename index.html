@@ -55,7 +55,6 @@
       width: 100%;
     }
 
-    /* Style for dropdowns and button */
     select,
     button {
       height: 40px;
@@ -144,15 +143,6 @@
           <canvas id="ontarioChart"></canvas>
         </div>
       </div>
-
-      <!-- New Card: Energy Savings Chart -->
-      <div class="card-custom" style="width: 400px; height: 400px;">
-        <h2>Energy Savings Chart</h2>
-        <div class="chart-container">
-          <canvas id="savingsChart"></canvas>
-        </div>
-        <p id="savingsTotals" style="font-size:1.2rem;"></p>
-      </div>
     </div>
   </div>
 
@@ -162,7 +152,6 @@
     // API endpoint for your Python backend on Render
     const apiEndpoint = "https://capstone4416-2025w-machinelearningmodel.onrender.com/predict";
     let ontarioChart; // Chart instance for Ontario Demand
-    let savingsChart;  // Chart instance for Energy Savings
 
     // Helper: fetch forecast data from the server
     async function fetchForecastData(params) {
@@ -255,59 +244,6 @@
       }
     }
 
-    // Update the Energy Savings Chart (difference between Ontario Demand and location forecast)
-    function updateSavingsChart(data, location, labels) {
-      const sortedDays = Object.keys(data).sort();
-      const savingsValues = [];
-      let totalSavings = 0;
-      sortedDays.forEach((dayKey) => {
-        const forecastObj = data[dayKey];
-        if (forecastObj["Ontario Demand"] !== undefined && forecastObj[location] !== undefined) {
-          const savings = forecastObj["Ontario Demand"] - forecastObj[location];
-          savingsValues.push(savings);
-          totalSavings += savings;
-        }
-      });
-      const ctx = document.getElementById("savingsChart").getContext("2d");
-      const chartData = {
-        labels,
-        datasets: [{
-          label: "Energy Savings (MW)",
-          data: savingsValues,
-          backgroundColor: "rgba(75, 192, 192, 0.6)",
-          borderColor: "rgba(75, 192, 192, 1)",
-          borderWidth: 1
-        }]
-      };
-      if (savingsChart) {
-        savingsChart.data = chartData;
-        savingsChart.update();
-      } else {
-        savingsChart = new Chart(ctx, {
-          type: "bar",
-          data: chartData,
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-              y: {
-                beginAtZero: true,
-                ticks: { color: "#fff" }
-              },
-              x: {
-                ticks: { color: "#fff" }
-              }
-            },
-            plugins: {
-              legend: { labels: { color: "#fff" } }
-            }
-          }
-        });
-      }
-      // Update the total savings display
-      document.getElementById("savingsTotals").textContent = "Total Savings: " + totalSavings.toFixed(2) + " MW";
-    }
-
     // On form submission, fetch forecast data and update the UI
     document.getElementById("forecastForm").addEventListener("submit", async function (e) {
       e.preventDefault();
@@ -315,7 +251,7 @@
       const start_day = parseInt(document.getElementById("daySelect").value);
       const location = document.getElementById("locationSelect").value.trim();
 
-      // Send month and start_day as query parameters. The backend will default to "daily" mode.
+      // Send month and start_day as query parameters. The backend defaults to daily (7-day) forecast if no mode is given.
       const params = { month, start_day };
 
       const data = await fetchForecastData(params);
@@ -331,8 +267,6 @@
       displayLocationResults(data, location, labels);
       // Update the Ontario Demand chart
       updateOntarioChart(data, labels);
-      // Update the Energy Savings chart (difference between Ontario Demand and selected location)
-      updateSavingsChart(data, location, labels);
     });
   </script>
 </body>
