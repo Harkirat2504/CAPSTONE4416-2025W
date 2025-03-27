@@ -55,7 +55,7 @@
       width: 100%;
     }
 
-    /* Style for dropdowns and button */
+    /* Style for dropdowns, buttons */
     select,
     button {
       height: 40px;
@@ -104,7 +104,6 @@
       <!-- Day Dropdown -->
       <select id="daySelect" required>
         <option value="" disabled selected>Day</option>
-        <!-- 1 through 31 -->
         <script>
           for (let d = 1; d <= 31; d++) {
             document.write(`<option value="${d}">${d}</option>`);
@@ -135,6 +134,8 @@
       <div class="card-custom" id="forecastResults">
         <h2 id="resultsTitle">Forecast Results</h2>
         <ul id="resultsList" class="list-group list-unstyled text-start"></ul>
+        <!-- New Button to Send Forecast Data to Arduino -->
+        <button id="sendToArduino" class="btn btn-success mt-2">Send Forecast to Arduino</button>
       </div>
 
       <!-- Right Card: Ontario Demand Chart -->
@@ -161,6 +162,7 @@
   <script>
     const apiEndpoint = "https://capstone4416-2025w-machinelearningmodel.onrender.com/predict";
     let ontarioChart; // For the Ontario Demand chart
+    let globalForecastData = {}; // To store forecast data for later sending
 
     // Helper to fetch forecast data from server
     async function fetchForecastData(params) {
@@ -322,6 +324,38 @@
     }
     // ---------------- End Static Chart Section ---------------- //
 
+    // Function to send forecast data to the local Python server
+    async function sendForecastToArduino() {
+      // Assume that after a forecast is fetched, we stored the data in globalForecastData.
+      // Here we send the entire forecast for the selected region.
+      const location = document.getElementById("locationSelect").value.trim();
+      if (!globalForecastData || !location) {
+        alert("Forecast data or location not available");
+        return;
+      }
+      // Prepare payload: here we send the forecast data as an array of objects.
+      // For example, extract data from globalForecastData
+      const sortedDays = Object.keys(globalForecastData).sort();
+      const forecastArray = sortedDays.map(dayKey => {
+        return { date: dayKey, mw: globalForecastData[dayKey][location] };
+      });
+      const payload = {
+        region: location,
+        forecast: forecastArray
+      };
+      try {
+        const response = await fetch("http://localhost:3000/sendToArduino", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+        console.log("Response from Arduino server:", result);
+      } catch (error) {
+        console.error("Error sending forecast to Arduino:", error);
+      }
+    }
+
     // On form submission, fetch and display forecast data
     document.getElementById("forecastForm").addEventListener("submit", async function (e) {
       e.preventDefault();
@@ -337,6 +371,9 @@
         return;
       }
 
+      // Save the forecast data globally so we can use it when sending to Arduino
+      globalForecastData = data;
+
       const sortedDays = Object.keys(data).sort();
       const labels = generateDateLabels(month, start_day, sortedDays.length);
 
@@ -349,7 +386,10 @@
 
     // On page load, create the static energy savings chart
     window.addEventListener("load", createStaticSavingsChart);
+
+    // Add event listener for sending forecast data to Arduino (e.g., when a button is clicked)
+    document.getElementById("sendToArduino").addEventListener("click", sendForecastToArduino);
   </script>
 </body>
-</html>
 
+</html>
