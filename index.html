@@ -140,11 +140,19 @@
         </div>
       </div>
 
-      <!-- Right Card: Hourly Chart (searched location) -->
+      <!-- Right Card: Hourly Forecast (searched location) -->
       <div class="card-custom" style="width: 400px; height: 400px;">
         <h2>Hourly Forecast (Searched Location)</h2>
         <div class="chart-container">
           <canvas id="hourlyChart"></canvas>
+        </div>
+      </div>
+
+      <!-- New Card: Wind Speed Forecast -->
+      <div class="card-custom" style="width: 400px; height: 400px;">
+        <h2>Wind Speed Forecast</h2>
+        <div class="chart-container">
+          <canvas id="windSpeedChart"></canvas>
         </div>
       </div>
     </div>
@@ -153,22 +161,23 @@
   <!-- Bootstrap Bundle JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    // API endpoint for your Python backend on Render
-    const apiEndpoint = "https://capstone4416-2025w-machinelearningmodel.onrender.com/predict";
-    let ontarioChart; // Chart for daily Ontario Demand (middle card)
-    let hourlyChart;  // Chart for hourly forecast (searched location, right card)
+    // API endpoints
+    const predictEndpoint = "https://capstone4416-2025w-machinelearningmodel.onrender.com/predict";
+    const windSpeedEndpoint = "https://capstone4416-2025w-machinelearningmodel.onrender.com/windspeed";
 
-    // Helper: fetch forecast data from the server
-    async function fetchForecastData(params) {
+    let ontarioChart;    // Daily Ontario Demand (middle card)
+    let hourlyChart;     // Hourly forecast (searched location, right card)
+    let windSpeedChart;  // Wind speed forecast (new card)
+
+    // Generic function to fetch data from an endpoint
+    async function fetchData(endpoint, params) {
       try {
         const queryString = new URLSearchParams(params).toString();
-        const response = await fetch(`${apiEndpoint}?${queryString}`);
-        if (!response.ok) {
-          throw new Error("Failed to fetch forecast data");
-        }
+        const response = await fetch(`${endpoint}?${queryString}`);
+        if (!response.ok) throw new Error("Failed to fetch data");
         return await response.json();
       } catch (error) {
-        console.error("Error fetching forecast data:", error);
+        console.error("Error fetching data:", error);
         return { error: error.message };
       }
     }
@@ -253,7 +262,6 @@
 
     // Update hourly chart for searched location (right card)
     function updateHourlyLocationChart(data, location, labels) {
-      // Extract hourly forecast values for the searched location.
       const sortedHours = Object.keys(data).sort((a, b) => parseInt(a) - parseInt(b));
       const locationHourlyValues = [];
       sortedHours.forEach(hourKey => {
@@ -293,38 +301,84 @@
       }
     }
 
-    // On form submission, fetch daily and hourly data and update UI
+    // New: Update wind speed chart using data from /windspeed endpoint (24-hour forecast)
+    function updateWindSpeedChart(data) {
+      // Expect data as an array of objects with keys: datetime, turbine_kwh, wind_speed_ms.
+      // We'll plot wind_speed_ms over the 24 hours.
+      const labels = data.map(item => {
+        const dt = new Date(item.datetime);
+        return dt.getHours().toString();
+      });
+      const windSpeeds = data.map(item => item.wind_speed_ms);
+      const ctx = document.getElementById("windSpeedChart").getContext("2d");
+      const chartData = {
+        labels,
+        datasets: [{
+          label: "Wind Speed (m/s)",
+          data: windSpeeds,
+          backgroundColor: "rgba(75, 192, 192, 0.6)",
+          borderColor: "rgba(75, 192, 192, 1)",
+          borderWidth: 1
+        }]
+      };
+      if (windSpeedChart) {
+        windSpeedChart.data = chartData;
+        windSpeedChart.update();
+      } else {
+        windSpeedChart = new Chart(ctx, {
+          type: "bar",
+          data: chartData,
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: { beginAtZero: true, ticks: { color: "#fff" } },
+              x: { ticks: { color: "#fff" } }
+            },
+            plugins: { legend: { labels: { color: "#fff" } } }
+          }
+        });
+      }
+    }
+
+    // On form submission, fetch daily, hourly, and wind speed data and update UI
     document.getElementById("forecastForm").addEventListener("submit", async function (e) {
       e.preventDefault();
       const month = parseInt(document.getElementById("monthSelect").value);
       const start_day = parseInt(document.getElementById("daySelect").value);
       const location = document.getElementById("locationSelect").value.trim();
 
-      // Daily forecast (7-day) – default mode
+      // Daily forecast (7-day) from /predict endpoint
       const dailyParams = { month, start_day };
-      const dailyData = await fetchForecastData(dailyParams);
+      const dailyData = await fetchData(predictEndpoint, dailyParams);
       if (dailyData.error) {
         alert(dailyData.error);
         return;
       }
       const sortedDays = Object.keys(dailyData).sort();
       const dailyLabels = generateDateLabels(month, start_day, sortedDays.length);
-      // Update left card: display daily forecast list for searched location
       displayLocationResults(dailyData, location, dailyLabels);
-      // Update middle card: daily bar graph for Ontario Demand
       updateOntarioChart(dailyData, dailyLabels);
 
-      // Hourly forecast: using mode "hourly" for 24-hour data
+      // Hourly forecast (24-hour) from /predict endpoint
       const hourlyParams = { month, start_day, mode: "hourly" };
-      const hourlyData = await fetchForecastData(hourlyParams);
+      const hourlyData = await fetchData(predictEndpoint, hourlyParams);
       if (hourlyData.error) {
         alert(hourlyData.error);
         return;
       }
       const sortedHours = Object.keys(hourlyData).sort((a, b) => parseInt(a) - parseInt(b));
       const hourlyLabels = generateHourlyLabels(sortedHours.length);
-      // Update right card: hourly chart for searched location
       updateHourlyLocationChart(hourlyData, location, hourlyLabels);
+
+      // Wind speed forecast from /windspeed endpoint
+      const windParams = { month, start_day };
+      const windData = await fetchData(windSpeedEndpoint, windParams);
+      if (windData.error) {
+        alert(windData.error);
+        return;
+      }
+      updateWindSpeedChart(windData);
     });
   </script>
 </body>
