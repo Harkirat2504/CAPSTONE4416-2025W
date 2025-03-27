@@ -37,6 +37,14 @@
       gap: 20px;
     }
 
+    /* Live clock container styling (optional) */
+    #clockContainer {
+      text-align: center;
+      color: #fff;
+      margin-bottom: -20px;
+      /* Move up slightly to blend with form */
+    }
+
     .grid-container {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -103,6 +111,14 @@
 
 <body>
   <div class="container text-center">
+    <!-- Live Clock -->
+    <div id="clockContainer">
+      <h4>
+        Current Toronto Time:
+        <span id="torontoClock"></span>
+      </h4>
+    </div>
+
     <!-- Input Form -->
     <form id="forecastForm" class="mb-3 d-flex flex-wrap justify-content-center gap-2">
       <!-- Month Dropdown -->
@@ -163,7 +179,7 @@
         </div>
       </div>
 
-      <!-- Right Card: Hourly Forecast (searched location) -->
+      <!-- Right Card: Hourly Forecast (Searched Location) -->
       <div class="card-custom">
         <h2>Hourly Forecast (Searched Location)</h2>
         <div class="chart-container">
@@ -200,7 +216,51 @@
   <!-- Bootstrap Bundle JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    // API endpoints
+    // =========================
+    // 1) LIVE TORONTO CLOCK
+    // =========================
+    function updateTorontoTime() {
+      // Use the browser's Intl API to get time in the "America/Toronto" timezone
+      const now = new Date();
+      const options = {
+        timeZone: "America/Toronto",
+        hour: "numeric",
+        minute: "numeric",
+        second: "numeric",
+        hour12: true,
+      };
+      // Convert local time to Toronto time
+      const torontoTimeString = now.toLocaleString("en-CA", options);
+      document.getElementById("torontoClock").textContent = torontoTimeString;
+    }
+    // Update the clock every second
+    setInterval(updateTorontoTime, 1000);
+    updateTorontoTime();
+
+    // =========================
+    // 2) AUTO-FILL FORM FIELDS
+    // =========================
+    // On page load, set the default month/day to current Toronto date
+    // and default location to "Toronto" (adjust if needed).
+    window.addEventListener("DOMContentLoaded", () => {
+      const now = new Date();
+      // Convert local time to Toronto time
+      const options = { timeZone: "America/Toronto" };
+      const torontoNowString = now.toLocaleString("en-CA", options);
+      const torontoNow = new Date(torontoNowString);
+
+      const currentMonth = torontoNow.getMonth() + 1; // 0-based in JS
+      const currentDay = torontoNow.getDate();
+
+      // Set default values in the form
+      document.getElementById("monthSelect").value = currentMonth;
+      document.getElementById("daySelect").value = currentDay;
+      document.getElementById("locationSelect").value = "Toronto";
+    });
+
+    // =========================
+    // 3) REST OF YOUR SCRIPT
+    // =========================
     const predictEndpoint = "https://capstone4416-2025w-machinelearningmodel.onrender.com/predict";
     const windSpeedEndpoint = "https://capstone4416-2025w-machinelearningmodel.onrender.com/windspeed";
     const turbineEndpoint = "https://capstone4416-2025w-machinelearningmodel.onrender.com/turbine";
@@ -233,7 +293,10 @@
       const year = new Date().getFullYear();
       for (let i = 0; i < numDays; i++) {
         const date = new Date(year, startMonth - 1, startDay + i);
-        const formatted = `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}`;
+        const formatted = `${(date.getMonth() + 1).toString().padStart(2, "0")}/${date
+          .getDate()
+          .toString()
+          .padStart(2, "0")}`;
         labels.push(formatted);
       }
       return labels;
@@ -268,7 +331,7 @@
     function updateOntarioChart(data, labels) {
       const sortedDays = Object.keys(data).sort();
       const ontarioValues = [];
-      sortedDays.forEach(dayKey => {
+      sortedDays.forEach((dayKey) => {
         const forecastObj = data[dayKey];
         if (forecastObj["Ontario Demand"] !== undefined) {
           ontarioValues.push(forecastObj["Ontario Demand"]);
@@ -277,13 +340,15 @@
       const ctx = document.getElementById("ontarioChart").getContext("2d");
       const chartData = {
         labels,
-        datasets: [{
-          label: "Ontario Demand (MW)",
-          data: ontarioValues,
-          backgroundColor: "rgba(54, 162, 235, 0.6)",
-          borderColor: "rgba(54, 162, 235, 1)",
-          borderWidth: 1
-        }]
+        datasets: [
+          {
+            label: "Ontario Demand (MW)",
+            data: ontarioValues,
+            backgroundColor: "rgba(54, 162, 235, 0.6)",
+            borderColor: "rgba(54, 162, 235, 1)",
+            borderWidth: 1,
+          },
+        ],
       };
       if (ontarioChart) {
         ontarioChart.data = chartData;
@@ -297,10 +362,10 @@
             maintainAspectRatio: false,
             scales: {
               y: { beginAtZero: true, ticks: { color: "#fff" } },
-              x: { ticks: { color: "#fff" } }
+              x: { ticks: { color: "#fff" } },
             },
-            plugins: { legend: { labels: { color: "#fff" } } }
-          }
+            plugins: { legend: { labels: { color: "#fff" } } },
+          },
         });
       }
     }
@@ -309,7 +374,7 @@
     function updateHourlyLocationChart(data, location, labels) {
       const sortedHours = Object.keys(data).sort((a, b) => parseInt(a) - parseInt(b));
       const locationHourlyValues = [];
-      sortedHours.forEach(hourKey => {
+      sortedHours.forEach((hourKey) => {
         const forecastObj = data[hourKey];
         if (forecastObj[location] !== undefined) {
           locationHourlyValues.push(forecastObj[location]);
@@ -318,13 +383,15 @@
       const ctx = document.getElementById("hourlyChart").getContext("2d");
       const chartData = {
         labels,
-        datasets: [{
-          label: `${location} Hourly Forecast (MW)`,
-          data: locationHourlyValues,
-          backgroundColor: "rgba(255, 159, 64, 0.6)",
-          borderColor: "rgba(255, 159, 64, 1)",
-          borderWidth: 1
-        }]
+        datasets: [
+          {
+            label: `${location} Hourly Forecast (MW)`,
+            data: locationHourlyValues,
+            backgroundColor: "rgba(255, 159, 64, 0.6)",
+            borderColor: "rgba(255, 159, 64, 1)",
+            borderWidth: 1,
+          },
+        ],
       };
       if (hourlyChart) {
         hourlyChart.data = chartData;
@@ -338,31 +405,33 @@
             maintainAspectRatio: false,
             scales: {
               y: { beginAtZero: true, ticks: { color: "#fff" } },
-              x: { ticks: { color: "#fff" } }
+              x: { ticks: { color: "#fff" } },
             },
-            plugins: { legend: { labels: { color: "#fff" } } }
-          }
+            plugins: { legend: { labels: { color: "#fff" } } },
+          },
         });
       }
     }
 
     // Update wind speed chart using data from /windspeed endpoint (new card)
     function updateWindSpeedChart(data) {
-      const labels = data.map(item => {
+      const labels = data.map((item) => {
         const dt = new Date(item.datetime);
         return dt.getHours().toString();
       });
-      const windSpeeds = data.map(item => item.wind_speed_ms);
+      const windSpeeds = data.map((item) => item.wind_speed_ms);
       const ctx = document.getElementById("windSpeedChart").getContext("2d");
       const chartData = {
         labels,
-        datasets: [{
-          label: "Wind Speed (m/s)",
-          data: windSpeeds,
-          backgroundColor: "rgba(128, 0, 128, 0.6)",
-          borderColor: "rgba(128, 0, 128, 1)",
-          borderWidth: 1
-        }]
+        datasets: [
+          {
+            label: "Wind Speed (m/s)",
+            data: windSpeeds,
+            backgroundColor: "rgba(128, 0, 128, 0.6)",
+            borderColor: "rgba(128, 0, 128, 1)",
+            borderWidth: 1,
+          },
+        ],
       };
       if (windSpeedChart) {
         windSpeedChart.data = chartData;
@@ -376,28 +445,28 @@
             maintainAspectRatio: false,
             scales: {
               y: { beginAtZero: true, ticks: { color: "#fff" } },
-              x: { ticks: { color: "#fff" } }
+              x: { ticks: { color: "#fff" } },
             },
-            plugins: { legend: { labels: { color: "#fff" } } }
-          }
+            plugins: { legend: { labels: { color: "#fff" } } },
+          },
         });
       }
     }
 
-    // New: Update Daily Energy Saved Bar Chart and Daily & Cumulative Money Saved Line Chart
+    // Update Daily Energy Saved Bar Chart and Daily & Cumulative Money Saved Line Chart
     // using data from the /turbine endpoint.
     function updateEnergyAndSavingsCharts(turbineData) {
       // Use daily data from turbineData.daily
       const dailyData = turbineData.daily;
       // Sort day keys (e.g., "day_1", "day_2", etc.) numerically
       const dayKeys = Object.keys(dailyData).sort((a, b) => {
-        return parseInt(a.split('_')[1]) - parseInt(b.split('_')[1]);
+        return parseInt(a.split("_")[1]) - parseInt(b.split("_")[1]);
       });
       // Create daily energy array using the sorted keys
-      const dailyEnergyArray = dayKeys.map(key => dailyData[key]);
+      const dailyEnergyArray = dayKeys.map((key) => dailyData[key]);
 
       // Compute daily money saved using electricityCost (in $/kWh)
-      const dailyMoneySavedArray = dailyEnergyArray.map(val => val * electricityCost);
+      const dailyMoneySavedArray = dailyEnergyArray.map((val) => val * electricityCost);
 
       // Compute cumulative money saved over the days
       const cumulativeMoneySavedArray = [];
@@ -413,13 +482,15 @@
       const ctxEnergy = document.getElementById("energySavedChart").getContext("2d");
       const energyData = {
         labels: dayLabels,
-        datasets: [{
-          label: "Daily Energy Saved (kWh)",
-          data: dailyEnergyArray,
-          backgroundColor: "rgba(0, 123, 255, 0.6)",
-          borderColor: "rgba(0, 123, 255, 1)",
-          borderWidth: 1
-        }]
+        datasets: [
+          {
+            label: "Daily Energy Saved (kWh)",
+            data: dailyEnergyArray,
+            backgroundColor: "rgba(0, 123, 255, 0.6)",
+            borderColor: "rgba(0, 123, 255, 1)",
+            borderWidth: 1,
+          },
+        ],
       };
       if (energySavedChart) {
         energySavedChart.data = energyData;
@@ -433,10 +504,10 @@
             maintainAspectRatio: false,
             scales: {
               y: { beginAtZero: true, ticks: { color: "#fff" } },
-              x: { ticks: { color: "#fff" } }
+              x: { ticks: { color: "#fff" } },
             },
-            plugins: { legend: { labels: { color: "#fff" } } }
-          }
+            plugins: { legend: { labels: { color: "#fff" } } },
+          },
         });
       }
 
@@ -444,22 +515,24 @@
       const ctxMoney = document.getElementById("moneySavedChart").getContext("2d");
       const moneyData = {
         labels: dayLabels,
-        datasets: [{
-          label: "Daily Money Saved ($)",
-          data: dailyMoneySavedArray,
-          backgroundColor: "rgba(40, 167, 69, 0.6)",
-          borderColor: "rgba(40, 167, 69, 1)",
-          borderWidth: 1,
-          fill: false
-        },
-        {
-          label: "Cumulative Money Saved ($)",
-          data: cumulativeMoneySavedArray,
-          backgroundColor: "rgba(255, 193, 7, 0.6)",
-          borderColor: "rgba(255, 193, 7, 1)",
-          borderWidth: 1,
-          fill: false
-        }]
+        datasets: [
+          {
+            label: "Daily Money Saved ($)",
+            data: dailyMoneySavedArray,
+            backgroundColor: "rgba(40, 167, 69, 0.6)",
+            borderColor: "rgba(40, 167, 69, 1)",
+            borderWidth: 1,
+            fill: false,
+          },
+          {
+            label: "Cumulative Money Saved ($)",
+            data: cumulativeMoneySavedArray,
+            backgroundColor: "rgba(255, 193, 7, 0.6)",
+            borderColor: "rgba(255, 193, 7, 1)",
+            borderWidth: 1,
+            fill: false,
+          },
+        ],
       };
       if (moneySavedChart) {
         moneySavedChart.data = moneyData;
@@ -473,61 +546,65 @@
             maintainAspectRatio: false,
             scales: {
               y: { beginAtZero: true, ticks: { color: "#fff" } },
-              x: { ticks: { color: "#fff" } }
+              x: { ticks: { color: "#fff" } },
             },
-            plugins: { legend: { labels: { color: "#fff" } } }
-          }
+            plugins: { legend: { labels: { color: "#fff" } } },
+          },
         });
       }
     }
 
     // On form submission, fetch daily, hourly, wind speed, and turbine data and update UI
-    document.getElementById("forecastForm").addEventListener("submit", async function (e) {
-      e.preventDefault();
-      const month = parseInt(document.getElementById("monthSelect").value);
-      const start_day = parseInt(document.getElementById("daySelect").value);
-      const location = document.getElementById("locationSelect").value.trim();
+    document
+      .getElementById("forecastForm")
+      .addEventListener("submit", async function (e) {
+        e.preventDefault();
+        const month = parseInt(document.getElementById("monthSelect").value);
+        const start_day = parseInt(document.getElementById("daySelect").value);
+        const location = document.getElementById("locationSelect").value.trim();
 
-      // Daily forecast (7-day) from /predict endpoint
-      const dailyParams = { month, start_day };
-      const dailyData = await fetchData(predictEndpoint, dailyParams);
-      if (dailyData.error) {
-        alert(dailyData.error);
-        return;
-      }
-      const sortedDays = Object.keys(dailyData).sort();
-      const dailyLabels = generateDateLabels(month, start_day, sortedDays.length);
-      displayLocationResults(dailyData, location, dailyLabels);
-      updateOntarioChart(dailyData, dailyLabels);
+        // Daily forecast (7-day) from /predict endpoint
+        const dailyParams = { month, start_day };
+        const dailyData = await fetchData(predictEndpoint, dailyParams);
+        if (dailyData.error) {
+          alert(dailyData.error);
+          return;
+        }
+        const sortedDays = Object.keys(dailyData).sort();
+        const dailyLabels = generateDateLabels(month, start_day, sortedDays.length);
+        displayLocationResults(dailyData, location, dailyLabels);
+        updateOntarioChart(dailyData, dailyLabels);
 
-      // Hourly forecast (24-hour) from /predict endpoint
-      const hourlyParams = { month, start_day, mode: "hourly" };
-      const hourlyData = await fetchData(predictEndpoint, hourlyParams);
-      if (hourlyData.error) {
-        alert(hourlyData.error);
-        return;
-      }
-      const sortedHours = Object.keys(hourlyData).sort((a, b) => parseInt(a) - parseInt(b));
-      const hourlyLabels = generateHourlyLabels(sortedHours.length);
-      updateHourlyLocationChart(hourlyData, location, hourlyLabels);
+        // Hourly forecast (24-hour) from /predict endpoint
+        const hourlyParams = { month, start_day, mode: "hourly" };
+        const hourlyData = await fetchData(predictEndpoint, hourlyParams);
+        if (hourlyData.error) {
+          alert(hourlyData.error);
+          return;
+        }
+        const sortedHours = Object.keys(hourlyData).sort(
+          (a, b) => parseInt(a) - parseInt(b)
+        );
+        const hourlyLabels = generateHourlyLabels(sortedHours.length);
+        updateHourlyLocationChart(hourlyData, location, hourlyLabels);
 
-      // Wind speed forecast from /windspeed endpoint
-      const windParams = { month, start_day };
-      const windData = await fetchData(windSpeedEndpoint, windParams);
-      if (windData.error) {
-        alert(windData.error);
-        return;
-      }
-      updateWindSpeedChart(windData);
+        // Wind speed forecast from /windspeed endpoint
+        const windParams = { month, start_day };
+        const windData = await fetchData(windSpeedEndpoint, windParams);
+        if (windData.error) {
+          alert(windData.error);
+          return;
+        }
+        updateWindSpeedChart(windData);
 
-      // Turbine forecast from /turbine endpoint for energy saved & money saved charts
-      const turbineData = await fetchData(turbineEndpoint, { month, start_day });
-      if (turbineData.error) {
-        alert(turbineData.error);
-        return;
-      }
-      updateEnergyAndSavingsCharts(turbineData);
-    });
+        // Turbine forecast from /turbine endpoint for energy saved & money saved charts
+        const turbineData = await fetchData(turbineEndpoint, { month, start_day });
+        if (turbineData.error) {
+          alert(turbineData.error);
+          return;
+        }
+        updateEnergyAndSavingsCharts(turbineData);
+      });
   </script>
 </body>
 
