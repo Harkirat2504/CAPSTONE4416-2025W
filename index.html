@@ -238,21 +238,15 @@
     updateTorontoTime();
 
     // =========================
-    // 2) AUTO-FILL FORM FIELDS
+    // 2) AUTO-FILL FORM FIELDS WITH TODAY'S DATE (LOCAL)
     // =========================
-    // On page load, set the default month/day to current Toronto date
-    // and default location to "Toronto" (adjust if needed).
+    // On page load, set the default month/day to today's date
+    // (using the user's local system time), and default location to "Toronto".
     window.addEventListener("DOMContentLoaded", () => {
-      const now = new Date();
-      // Convert local time to Toronto time
-      const options = { timeZone: "America/Toronto" };
-      const torontoNowString = now.toLocaleString("en-CA", options);
-      const torontoNow = new Date(torontoNowString);
+      const now = new Date(); // local date/time
+      const currentMonth = now.getMonth() + 1; // 0-based in JS
+      const currentDay = now.getDate();
 
-      const currentMonth = torontoNow.getMonth() + 1; // 0-based in JS
-      const currentDay = torontoNow.getDate();
-
-      // Set default values in the form
       document.getElementById("monthSelect").value = currentMonth;
       document.getElementById("daySelect").value = currentDay;
       document.getElementById("locationSelect").value = "Toronto";
