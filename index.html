@@ -143,6 +143,14 @@
           <canvas id="ontarioChart"></canvas>
         </div>
       </div>
+
+      <!-- New Card: Hourly Forecast Chart -->
+      <div class="card-custom" style="width: 400px; height: 400px;">
+        <h2>Hourly Forecast Chart</h2>
+        <div class="chart-container">
+          <canvas id="hourlyChart"></canvas>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -152,6 +160,7 @@
     // API endpoint for your Python backend on Render
     const apiEndpoint = "https://capstone4416-2025w-machinelearningmodel.onrender.com/predict";
     let ontarioChart; // Chart instance for Ontario Demand
+    let hourlyChart;  // Chart instance for Hourly Forecast
 
     // Helper: fetch forecast data from the server
     async function fetchForecastData(params) {
@@ -168,7 +177,7 @@
       }
     }
 
-    // Helper: generate date labels starting from month and day for given number of days
+    // Helper: generate date labels for daily forecast
     function generateDateLabels(startMonth, startDay, numDays) {
       const labels = [];
       const year = new Date().getFullYear();
@@ -176,6 +185,15 @@
         const date = new Date(year, startMonth - 1, startDay + i);
         const formatted = `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}`;
         labels.push(formatted);
+      }
+      return labels;
+    }
+
+    // Helper: generate hourly labels (e.g., 1 to 24)
+    function generateHourlyLabels(numHours) {
+      const labels = [];
+      for (let i = 1; i <= numHours; i++) {
+        labels.push(i.toString());
       }
       return labels;
     }
@@ -196,7 +214,7 @@
       document.getElementById("resultsTitle").textContent = `${location} Forecast Results`;
     }
 
-    // Update the Ontario Demand Chart (bar chart)
+    // Update the Ontario Demand Chart (bar chart for daily data)
     function updateOntarioChart(data, labels) {
       const sortedDays = Object.keys(data).sort();
       const ontarioValues = [];
@@ -244,29 +262,83 @@
       }
     }
 
-    // On form submission, fetch forecast data and update the UI
+    // Update the Hourly Forecast Chart (line chart for hourly data)
+    function updateHourlyChart(data, labels) {
+      const sortedHours = Object.keys(data).sort((a, b) => parseInt(a) - parseInt(b));
+      const hourlyValues = [];
+      sortedHours.forEach((hour) => {
+        const forecastObj = data[hour];
+        if (forecastObj["Ontario Demand"] !== undefined) {
+          hourlyValues.push(forecastObj["Ontario Demand"]);
+        }
+      });
+      const ctx = document.getElementById("hourlyChart").getContext("2d");
+      const chartData = {
+        labels,
+        datasets: [{
+          label: "Hourly Ontario Demand (MW)",
+          data: hourlyValues,
+          backgroundColor: "rgba(255, 99, 132, 0.6)",
+          borderColor: "rgba(255, 99, 132, 1)",
+          borderWidth: 1
+        }]
+      };
+      if (hourlyChart) {
+        hourlyChart.data = chartData;
+        hourlyChart.update();
+      } else {
+        hourlyChart = new Chart(ctx, {
+          type: "line",
+          data: chartData,
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: { color: "#fff" }
+              },
+              x: {
+                ticks: { color: "#fff" }
+              }
+            },
+            plugins: {
+              legend: { labels: { color: "#fff" } }
+            }
+          }
+        });
+      }
+    }
+
+    // On form submission, fetch daily and hourly forecast data and update the UI
     document.getElementById("forecastForm").addEventListener("submit", async function (e) {
       e.preventDefault();
       const month = parseInt(document.getElementById("monthSelect").value);
       const start_day = parseInt(document.getElementById("daySelect").value);
       const location = document.getElementById("locationSelect").value.trim();
 
-      // Send month and start_day as query parameters. The backend defaults to daily (7-day) forecast if no mode is given.
-      const params = { month, start_day };
-
-      const data = await fetchForecastData(params);
-      if (data.error) {
-        alert(data.error);
+      // Daily forecast: backend defaults to daily (7-day) forecast if no mode is provided.
+      const dailyParams = { month, start_day };
+      const dailyData = await fetchForecastData(dailyParams);
+      if (dailyData.error) {
+        alert(dailyData.error);
         return;
       }
+      const sortedDays = Object.keys(dailyData).sort();
+      const dailyLabels = generateDateLabels(month, start_day, sortedDays.length);
+      displayLocationResults(dailyData, location, dailyLabels);
+      updateOntarioChart(dailyData, dailyLabels);
 
-      const sortedDays = Object.keys(data).sort();
-      const labels = generateDateLabels(month, start_day, sortedDays.length);
-
-      // Display the location forecast in the left card
-      displayLocationResults(data, location, labels);
-      // Update the Ontario Demand chart
-      updateOntarioChart(data, labels);
+      // Hourly forecast: include mode parameter as "hourly" for 24-hour forecast.
+      const hourlyParams = { month, start_day, mode: "hourly" };
+      const hourlyData = await fetchForecastData(hourlyParams);
+      if (hourlyData.error) {
+        alert(hourlyData.error);
+        return;
+      }
+      const sortedHours = Object.keys(hourlyData).sort((a, b) => parseInt(a) - parseInt(b));
+      const hourlyLabels = generateHourlyLabels(sortedHours.length);
+      updateHourlyChart(hourlyData, hourlyLabels);
     });
   </script>
 </body>
