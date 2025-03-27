@@ -322,7 +322,38 @@
     }
     // ---------------- End Static Chart Section ---------------- //
 
-    // On form submission, fetch and display forecast data
+     // Function to automatically send forecast data to the local Python server
+    async function sendForecastToArduino() {
+      const location = document.getElementById("locationSelect").value.trim();
+      if (!globalForecastData || !location) {
+        console.warn("No forecast data or location not set yet.");
+        return;
+      }
+      // Build the payload from the forecast data for the selected region
+      const sortedDays = Object.keys(globalForecastData).sort();
+      const forecastArray = sortedDays.map(dayKey => {
+        return { date: dayKey, mw: globalForecastData[dayKey][location] };
+      });
+      const payload = {
+        region: location,
+        forecast: forecastArray
+      };
+      try {
+        const response = await fetch("http://localhost:3000/sendToArduino", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+        console.log("Response from Arduino server:", result);
+      } catch (error) {
+        console.error("Error sending forecast to Arduino:", error);
+      }
+    }
+
+    let globalForecastData = {};
+
+    // On form submission, fetch and display forecast data, then automatically send to Arduino
     document.getElementById("forecastForm").addEventListener("submit", async function (e) {
       e.preventDefault();
       const month = parseInt(document.getElementById("monthSelect").value);
@@ -337,14 +368,21 @@
         return;
       }
 
+      // Save the forecast data globally
+      globalForecastData = data;
+
+      // Generate labels for each day
       const sortedDays = Object.keys(data).sort();
       const labels = generateDateLabels(month, start_day, sortedDays.length);
 
-      // Display only the location data in the left card
+      // Display location data in the left card
       displayLocationResults(data, location, labels);
 
-      // Update the Ontario Demand chart on the right
+      // Update the Ontario Demand chart
       updateOntarioChart(data, labels);
+
+      // Immediately send the forecast data to Arduino
+      sendForecastToArduino();
     });
 
     // On page load, create the static energy savings chart
