@@ -173,6 +173,7 @@
 
       // Helper to fetch forecast data from server
       async function fetchForecastData(params) {
+        console.log("Fetching forecast data with params:", params);
         try {
           const queryString = new URLSearchParams(params).toString();
           const response = await fetch(`${apiEndpoint}?${queryString}`);
@@ -351,6 +352,7 @@
       // On form submission: fetch forecast data, update charts, and send data to Arduino
       document.getElementById("forecastForm").addEventListener("submit", async function (e) {
         e.preventDefault();
+        console.log("Forecast form submitted");
         const month = parseInt(document.getElementById("monthSelect").value);
         const start_day = parseInt(document.getElementById("daySelect").value);
         const location = document.getElementById("locationSelect").value.trim();
