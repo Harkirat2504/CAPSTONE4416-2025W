@@ -457,9 +457,6 @@
       // Create daily energy array using the sorted keys
       const dailyEnergyArray = dayKeys.map((key) => dailyData[key]);
 
-      // =======================
-      // CHANGED: Use actual date labels
-      // =======================
       // We'll use the same approach as daily forecast:
       const month = parseInt(document.getElementById("monthSelect").value);
       const start_day = parseInt(document.getElementById("daySelect").value);
@@ -479,7 +476,7 @@
       // --- Update Daily Energy Saved Chart (Bar Chart) ---
       const ctxEnergy = document.getElementById("energySavedChart").getContext("2d");
       const energyData = {
-        labels: dateLabels, // replaced dayLabels with dateLabels
+        labels: dateLabels,
         datasets: [
           {
             label: "Daily Energy Saved (kWh)",
@@ -512,7 +509,7 @@
       // --- Update Daily & Cumulative Money Saved Chart (Line Chart) ---
       const ctxMoney = document.getElementById("moneySavedChart").getContext("2d");
       const moneyData = {
-        labels: dateLabels, // replaced dayLabels with dateLabels
+        labels: dateLabels,
         datasets: [
           {
             label: "Daily Money Saved ($)",
@@ -551,6 +548,51 @@
         });
       }
     }
+
+    // ============== ARDUINO SEND FUNCTION ==============
+    // This function sends daily forecast (for chosen location) AND
+    // hourly wind speed data to a local Python server that writes to Arduino.
+    async function sendToArduino(dailyData, location, windData) {
+      try {
+        // 1) Extract daily forecast for the location
+        const sortedDays = Object.keys(dailyData).sort();
+        const dailyForecastArray = [];
+        sortedDays.forEach(dayKey => {
+          const forecastObj = dailyData[dayKey];
+          if (forecastObj[location] !== undefined) {
+            dailyForecastArray.push({
+              day: dayKey,
+              mw: forecastObj[location]
+            });
+          }
+        });
+
+        // 2) Extract hourly wind speeds
+        const windSpeedArray = windData.map(item => ({
+          datetime: item.datetime,
+          wind_speed_ms: item.wind_speed_ms
+        }));
+
+        // 3) Build payload
+        const payload = {
+          location: location,
+          dailyForecast: dailyForecastArray,
+          windSpeed: windSpeedArray
+        };
+
+        // 4) POST to local server (Python) that sends data over serial
+        const arduinoResponse = await fetch("http://localhost:3000/sendToArduino", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const result = await arduinoResponse.json();
+        console.log("Arduino response:", result);
+      } catch (error) {
+        console.error("Error sending data to Arduino:", error);
+      }
+    }
+    // ===================================================
 
     // On form submission, fetch daily, hourly, wind speed, and turbine data and update UI
     document
@@ -602,6 +644,9 @@
           return;
         }
         updateEnergyAndSavingsCharts(turbineData);
+
+        // ======= Send to Arduino automatically (no button) =======
+        sendToArduino(dailyData, location, windData);
       });
   </script>
 </body>
