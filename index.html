@@ -187,9 +187,9 @@
         </div>
       </div>
 
-      <!-- New Card: Wind Speed Forecast -->
+      <!-- New Card: Hourly Wind Speed Forecast -->
       <div class="card-custom">
-        <h2>Wind Speed Forecast</h2>
+        <h2>Hourly Wind Speed Forecast</h2>
         <div class="chart-container">
           <canvas id="windSpeedChart"></canvas>
         </div>
@@ -203,9 +203,9 @@
         </div>
       </div>
 
-      <!-- New Card: Daily & Cumulative Money Saved Chart -->
+      <!-- New Card: Daily Savings Overview -->
       <div class="card-custom">
-        <h2>Money Saved Chart</h2>
+        <h2>Daily Savings Overview</h2>
         <div class="chart-container">
           <canvas id="moneySavedChart"></canvas>
         </div>
@@ -240,8 +240,6 @@
     // =========================
     // 2) AUTO-FILL FORM FIELDS WITH TODAY'S DATE (LOCAL)
     // =========================
-    // On page load, set the default month/day to today's date
-    // (using the user's local system time), and default location to "Toronto".
     window.addEventListener("DOMContentLoaded", () => {
       const now = new Date(); // local date/time
       const currentMonth = now.getMonth() + 1; // 0-based in JS
@@ -459,6 +457,15 @@
       // Create daily energy array using the sorted keys
       const dailyEnergyArray = dayKeys.map((key) => dailyData[key]);
 
+      // =======================
+      // CHANGED: Use actual date labels
+      // =======================
+      // We'll use the same approach as daily forecast:
+      const month = parseInt(document.getElementById("monthSelect").value);
+      const start_day = parseInt(document.getElementById("daySelect").value);
+      // We have dayKeys.length days
+      const dateLabels = generateDateLabels(month, start_day, dayKeys.length);
+
       // Compute daily money saved using electricityCost (in $/kWh)
       const dailyMoneySavedArray = dailyEnergyArray.map((val) => val * electricityCost);
 
@@ -469,13 +476,10 @@
         return cumulativeMoneySavedArray[i];
       }, 0);
 
-      // Generate labels (e.g., "Day 1", "Day 2", etc.)
-      const dayLabels = dayKeys.map((_, i) => `Day ${i + 1}`);
-
       // --- Update Daily Energy Saved Chart (Bar Chart) ---
       const ctxEnergy = document.getElementById("energySavedChart").getContext("2d");
       const energyData = {
-        labels: dayLabels,
+        labels: dateLabels, // replaced dayLabels with dateLabels
         datasets: [
           {
             label: "Daily Energy Saved (kWh)",
@@ -508,7 +512,7 @@
       // --- Update Daily & Cumulative Money Saved Chart (Line Chart) ---
       const ctxMoney = document.getElementById("moneySavedChart").getContext("2d");
       const moneyData = {
-        labels: dayLabels,
+        labels: dateLabels, // replaced dayLabels with dateLabels
         datasets: [
           {
             label: "Daily Money Saved ($)",
