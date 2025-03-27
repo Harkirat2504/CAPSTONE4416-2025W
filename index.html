@@ -5,7 +5,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Ontario Energy Demand Forecast</title>
-
   <!-- Bootstrap 5 CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
   <!-- Google Fonts: Roboto -->
@@ -14,7 +13,6 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
   <style>
     body {
       margin: 0;
@@ -126,7 +124,7 @@
     </form>
 
     <div class="d-flex flex-wrap gap-3 justify-content-center">
-      <!-- Left Card: Daily Forecast List (searched location) -->
+      <!-- Left Card: Daily Forecast List for Searched Location -->
       <div class="card-custom" id="forecastResults">
         <h2 id="resultsTitle">Daily Forecast (Searched Location)</h2>
         <ul id="resultsList" class="list-group list-unstyled text-start"></ul>
@@ -140,11 +138,19 @@
         </div>
       </div>
 
-      <!-- Right Card: Hourly Chart (searched location) -->
+      <!-- Right Card: Hourly Forecast Chart for Searched Location -->
       <div class="card-custom" style="width: 400px; height: 400px;">
         <h2>Hourly Forecast (Searched Location)</h2>
         <div class="chart-container">
           <canvas id="hourlyChart"></canvas>
+        </div>
+      </div>
+
+      <!-- New Card: Daily Energy Difference Chart -->
+      <div class="card-custom" style="width: 400px; height: 400px;">
+        <h2>Daily Energy Difference</h2>
+        <div class="chart-container">
+          <canvas id="energyDiffChart"></canvas>
         </div>
       </div>
     </div>
@@ -155,8 +161,9 @@
   <script>
     // API endpoint for your Python backend on Render
     const apiEndpoint = "https://capstone4416-2025w-machinelearningmodel.onrender.com/predict";
-    let ontarioChart; // Chart for daily Ontario Demand (middle card)
-    let hourlyChart;  // Chart for hourly forecast (searched location, right card)
+    let ontarioChart;    // Daily bar graph (Ontario Demand)
+    let hourlyChart;     // Hourly chart (searched location)
+    let energyDiffChart; // Energy difference chart
 
     // Helper: fetch forecast data from the server
     async function fetchForecastData(params) {
@@ -253,7 +260,6 @@
 
     // Update hourly chart for searched location (right card)
     function updateHourlyLocationChart(data, location, labels) {
-      // Extract hourly forecast values for the searched location.
       const sortedHours = Object.keys(data).sort((a, b) => parseInt(a) - parseInt(b));
       const locationHourlyValues = [];
       sortedHours.forEach(hourKey => {
@@ -293,14 +299,56 @@
       }
     }
 
-    // On form submission, fetch daily and hourly data and update UI
+    // Update energy difference chart (new card) using the API's model output
+    // Difference = (Ontario Demand) - (searched location forecast)
+    function updateEnergyDiffChart(data, location, labels) {
+      const sortedDays = Object.keys(data).sort();
+      const diffValues = [];
+      sortedDays.forEach(dayKey => {
+        const forecastObj = data[dayKey];
+        if (forecastObj["Ontario Demand"] !== undefined && forecastObj[location] !== undefined) {
+          diffValues.push(forecastObj["Ontario Demand"] - forecastObj[location]);
+        }
+      });
+      const ctx = document.getElementById("energyDiffChart").getContext("2d");
+      const chartData = {
+        labels,
+        datasets: [{
+          label: "Energy Difference (MW)",
+          data: diffValues,
+          backgroundColor: "rgba(75, 192, 192, 0.6)",
+          borderColor: "rgba(75, 192, 192, 1)",
+          borderWidth: 1
+        }]
+      };
+      if (energyDiffChart) {
+        energyDiffChart.data = chartData;
+        energyDiffChart.update();
+      } else {
+        energyDiffChart = new Chart(ctx, {
+          type: "bar",
+          data: chartData,
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: { beginAtZero: true, ticks: { color: "#fff" } },
+              x: { ticks: { color: "#fff" } }
+            },
+            plugins: { legend: { labels: { color: "#fff" } } }
+          }
+        });
+      }
+    }
+
+    // On form submission, fetch daily and hourly data and update UI using the API's model output
     document.getElementById("forecastForm").addEventListener("submit", async function (e) {
       e.preventDefault();
       const month = parseInt(document.getElementById("monthSelect").value);
       const start_day = parseInt(document.getElementById("daySelect").value);
       const location = document.getElementById("locationSelect").value.trim();
 
-      // Daily forecast (7-day) – default mode
+      // Daily forecast (7-day) – default mode; API returns filtered output using model's predictions
       const dailyParams = { month, start_day };
       const dailyData = await fetchForecastData(dailyParams);
       if (dailyData.error) {
@@ -309,12 +357,14 @@
       }
       const sortedDays = Object.keys(dailyData).sort();
       const dailyLabels = generateDateLabels(month, start_day, sortedDays.length);
-      // Update left card: display daily forecast list for searched location
+      // Left card: display daily forecast list for searched location
       displayLocationResults(dailyData, location, dailyLabels);
-      // Update middle card: daily bar graph for Ontario Demand
+      // Middle card: daily bar graph for Ontario Demand
       updateOntarioChart(dailyData, dailyLabels);
+      // New block: energy difference chart (model's Ontario Demand minus searched location forecast)
+      updateEnergyDiffChart(dailyData, location, dailyLabels);
 
-      // Hourly forecast: using mode "hourly" for 24-hour data
+      // Hourly forecast: mode "hourly" for 24-hour data
       const hourlyParams = { month, start_day, mode: "hourly" };
       const hourlyData = await fetchForecastData(hourlyParams);
       if (hourlyData.error) {
@@ -323,7 +373,7 @@
       }
       const sortedHours = Object.keys(hourlyData).sort((a, b) => parseInt(a) - parseInt(b));
       const hourlyLabels = generateHourlyLabels(sortedHours.length);
-      // Update right card: hourly chart for searched location
+      // Right card: hourly chart for searched location
       updateHourlyLocationChart(hourlyData, location, hourlyLabels);
     });
   </script>
