@@ -132,7 +132,7 @@
         <ul id="resultsList" class="list-group list-unstyled text-start"></ul>
       </div>
 
-      <!-- Middle Card: Daily Bar Graph (Ontario Demand) -->
+      <!-- Middle Card: Daily Ontario Demand Chart -->
       <div class="card-custom" style="width: 400px; height: 400px;">
         <h2>Daily Ontario Demand Chart</h2>
         <div class="chart-container">
@@ -155,6 +155,22 @@
           <canvas id="windSpeedChart"></canvas>
         </div>
       </div>
+
+      <!-- New Card: Daily Energy Saved Chart -->
+      <div class="card-custom" style="width: 400px; height: 400px;">
+        <h2>Daily Energy Saved Chart</h2>
+        <div class="chart-container">
+          <canvas id="energySavedChart"></canvas>
+        </div>
+      </div>
+
+      <!-- New Card: Daily & Cumulative Money Saved Chart -->
+      <div class="card-custom" style="width: 400px; height: 400px;">
+        <h2>Money Saved Chart</h2>
+        <div class="chart-container">
+          <canvas id="moneySavedChart"></canvas>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -164,10 +180,16 @@
     // API endpoints
     const predictEndpoint = "https://capstone4416-2025w-machinelearningmodel.onrender.com/predict";
     const windSpeedEndpoint = "https://capstone4416-2025w-machinelearningmodel.onrender.com/windspeed";
+    const turbineEndpoint = "https://capstone4416-2025w-machinelearningmodel.onrender.com/turbine";
 
     let ontarioChart;    // Daily Ontario Demand (middle card)
     let hourlyChart;     // Hourly forecast (searched location, right card)
     let windSpeedChart;  // Wind speed forecast (new card)
+    let energySavedChart;  // Daily Energy Saved Chart
+    let moneySavedChart;   // Daily & Cumulative Money Saved Chart
+
+    // Constant: Electricity cost per kWh (in dollars)
+    const electricityCost = 0.15;
 
     // Generic function to fetch data from an endpoint
     async function fetchData(endpoint, params) {
@@ -301,10 +323,8 @@
       }
     }
 
-    // New: Update wind speed chart using data from /windspeed endpoint (24-hour forecast)
+    // Update wind speed chart using data from /windspeed endpoint (new card)
     function updateWindSpeedChart(data) {
-      // Expect data as an array of objects with keys: datetime, turbine_kwh, wind_speed_ms.
-      // We'll plot wind_speed_ms over the 24 hours.
       const labels = data.map(item => {
         const dt = new Date(item.datetime);
         return dt.getHours().toString();
@@ -341,7 +361,105 @@
       }
     }
 
-    // On form submission, fetch daily, hourly, and wind speed data and update UI
+    // New: Update Daily Energy Saved Bar Chart and Daily & Cumulative Money Saved Line Chart
+    // using data from the /turbine endpoint.
+    function updateEnergyAndSavingsCharts(turbineData) {
+      // turbineData is an object with keys "1" to "24"
+      // Compute daily energy saved as the sum of hourly turbine outputs.
+      const hourlyOutputs = Object.values(turbineData);
+      const dailyEnergySaved = hourlyOutputs.reduce((sum, val) => sum + val, 0);
+
+      // Assume the same daily value for a 7-day period
+      const numDays = 7;
+      const dailyEnergyArray = Array(numDays).fill(dailyEnergySaved);
+
+      // Compute daily money saved (electricityCost in $/kWh)
+      const electricityCost = 0.15;
+      const dailyMoneySavedArray = dailyEnergyArray.map(val => val * electricityCost);
+
+      // Compute cumulative money saved over 7 days
+      const cumulativeMoneySavedArray = [];
+      dailyMoneySavedArray.reduce((acc, val, i) => {
+        cumulativeMoneySavedArray[i] = acc + val;
+        return cumulativeMoneySavedArray[i];
+      }, 0);
+
+      // Generate labels for 7 days
+      const dayLabels = Array.from({ length: numDays }, (_, i) => `Day ${i + 1}`);
+
+      // --- Update Daily Energy Saved Chart (Bar Chart) ---
+      const ctxEnergy = document.getElementById("energySavedChart").getContext("2d");
+      const energyData = {
+        labels: dayLabels,
+        datasets: [{
+          label: "Daily Energy Saved (kWh)",
+          data: dailyEnergyArray,
+          backgroundColor: "rgba(0, 123, 255, 0.6)", // Blue
+          borderColor: "rgba(0, 123, 255, 1)",
+          borderWidth: 1
+        }]
+      };
+      if (energySavedChart) {
+        energySavedChart.data = energyData;
+        energySavedChart.update();
+      } else {
+        energySavedChart = new Chart(ctxEnergy, {
+          type: "bar",
+          data: energyData,
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: { beginAtZero: true, ticks: { color: "#fff" } },
+              x: { ticks: { color: "#fff" } }
+            },
+            plugins: { legend: { labels: { color: "#fff" } } }
+          }
+        });
+      }
+
+      // --- Update Daily & Cumulative Money Saved Chart (Line Chart) ---
+      const ctxMoney = document.getElementById("moneySavedChart").getContext("2d");
+      const moneyData = {
+        labels: dayLabels,
+        datasets: [{
+          label: "Daily Money Saved ($)",
+          data: dailyMoneySavedArray,
+          backgroundColor: "rgba(40, 167, 69, 0.6)", // Greenish
+          borderColor: "rgba(40, 167, 69, 1)",
+          borderWidth: 1,
+          fill: false
+        },
+        {
+          label: "Cumulative Money Saved ($)",
+          data: cumulativeMoneySavedArray,
+          backgroundColor: "rgba(255, 193, 7, 0.6)", // Yellowish
+          borderColor: "rgba(255, 193, 7, 1)",
+          borderWidth: 1,
+          fill: false
+        }]
+      };
+      if (moneySavedChart) {
+        moneySavedChart.data = moneyData;
+        moneySavedChart.update();
+      } else {
+        moneySavedChart = new Chart(ctxMoney, {
+          type: "line",
+          data: moneyData,
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: { beginAtZero: true, ticks: { color: "#fff" } },
+              x: { ticks: { color: "#fff" } }
+            },
+            plugins: { legend: { labels: { color: "#fff" } } }
+          }
+        });
+      }
+    }
+
+    // On form submission, fetch daily, hourly, wind speed, and turbine data and update UI
     document.getElementById("forecastForm").addEventListener("submit", async function (e) {
       e.preventDefault();
       const month = parseInt(document.getElementById("monthSelect").value);
@@ -379,6 +497,14 @@
         return;
       }
       updateWindSpeedChart(windData);
+
+      // Turbine forecast from /turbine endpoint for energy saved & money saved charts
+      const turbineData = await fetchData(turbineEndpoint, { month, start_day });
+      if (turbineData.error) {
+        alert(turbineData.error);
+        return;
+      }
+      updateEnergyAndSavingsCharts(turbineData);
     });
   </script>
 </body>
