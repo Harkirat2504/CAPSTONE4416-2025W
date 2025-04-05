@@ -232,7 +232,6 @@
         second: "numeric",
         hour12: true,
       };
-      // Convert local time to Toronto time
       const torontoTimeString = now.toLocaleString("en-CA", options);
       document.getElementById("torontoClock").textContent = torontoTimeString;
     }
@@ -553,8 +552,6 @@
     }
 
     // ============== ARDUINO SEND FUNCTION ==============
-    // This function sends daily forecast (for chosen location) AND
-    // hourly wind speed data to a local Python server that writes to Arduino.
     async function sendToArduino(dailyData, location, windData) {
       try {
         // 1) Extract daily forecast for the location
@@ -651,13 +648,13 @@
     // =====================
     // HARDCODED SAVINGS DATA
     // =====================
-    // (These two charts below are for demonstration; they've been updated to have dual axes)
 
     // 48-hour example
     const hourlyLabels = Array.from({ length: 48 }, (_, i) => `Hr ${i + 1}`);
     const hourlyEnergy = Array.from({ length: 48 }, () => Math.floor(Math.random() * 5 + 5)); // 5–10 kWh
     const hourlyMoney = hourlyEnergy.map(kWh => +(kWh * 0.15).toFixed(2)); // $ per hour
 
+    // HOURLY CHART (48h) with axis colors matching the bars
     const ctxHourly = document.getElementById("hourlySavingsChart").getContext("2d");
     new Chart(ctxHourly, {
       type: "bar",
@@ -667,14 +664,14 @@
           {
             label: "Energy Saved (kWh)",
             data: hourlyEnergy,
-            backgroundColor: "rgba(0, 255, 0, 0.8)",
-            yAxisID: "y", // Left axis
+            backgroundColor: "rgba(0, 255, 0, 0.8)", // green
+            yAxisID: "y",
           },
           {
             label: "Money Saved ($)",
             data: hourlyMoney,
-            backgroundColor: "rgba(255, 205, 86, 0.6)",
-            yAxisID: "y1", // Right axis
+            backgroundColor: "rgba(255, 205, 86, 0.6)", // gold
+            yAxisID: "y1",
           },
         ],
       },
@@ -682,18 +679,24 @@
         responsive: true,
         maintainAspectRatio: false,
         scales: {
+          // Left axis in green
           y: {
             type: "linear",
             position: "left",
             beginAtZero: true,
-            ticks: { color: "#fff" },
+            ticks: {
+              color: "rgb(0, 255, 0)" // match Energy Saved bar color
+            },
           },
+          // Right axis in gold
           y1: {
             type: "linear",
             position: "right",
             beginAtZero: true,
-            ticks: { color: "#fff" },
-            grid: { drawOnChartArea: false }, // keeps the grid lines from overlapping
+            ticks: {
+              color: "rgb(255, 205, 86)" // match Money Saved bar color
+            },
+            grid: { drawOnChartArea: false },
           },
           x: { ticks: { color: "#fff" } },
         },
@@ -706,6 +709,7 @@
     const dailyEnergySavings = [55, 60, 52, 65, 58, 70, 68]; // kWh
     const dailyMoneySavings = dailyEnergySavings.map(kWh => +(kWh * 0.15).toFixed(2));
 
+    // DAILY CHART (7d) with axis colors matching the bars
     const ctxDaily = document.getElementById("dailySavingsChart").getContext("2d");
     new Chart(ctxDaily, {
       type: "bar",
@@ -715,14 +719,14 @@
           {
             label: "Energy Saved (kWh)",
             data: dailyEnergySavings,
-            backgroundColor: "rgba(153, 102, 255, 0.6)",
-            yAxisID: "y", // Left axis
+            backgroundColor: "rgba(153, 102, 255, 0.6)", // purple
+            yAxisID: "y",
           },
           {
             label: "Money Saved ($)",
             data: dailyMoneySavings,
-            backgroundColor: "rgba(255, 99, 132, 0.6)",
-            yAxisID: "y1", // Right axis
+            backgroundColor: "rgba(255, 99, 132, 0.6)", // pink/red
+            yAxisID: "y1",
           },
         ],
       },
@@ -730,17 +734,23 @@
         responsive: true,
         maintainAspectRatio: false,
         scales: {
+          // Left axis in purple
           y: {
             type: "linear",
             position: "left",
             beginAtZero: true,
-            ticks: { color: "#fff" },
+            ticks: {
+              color: "rgb(153, 102, 255)" // match Energy Saved bar color
+            },
           },
+          // Right axis in pink/red
           y1: {
             type: "linear",
             position: "right",
             beginAtZero: true,
-            ticks: { color: "#fff" },
+            ticks: {
+              color: "rgb(255, 99, 132)" // match Money Saved bar color
+            },
             grid: { drawOnChartArea: false },
           },
           x: { ticks: { color: "#fff" } },
