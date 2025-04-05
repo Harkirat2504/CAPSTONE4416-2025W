@@ -654,7 +654,7 @@
     const hourlyEnergy = Array.from({ length: 48 }, () => Math.floor(Math.random() * 5 + 5)); // 5–10 kWh
     const hourlyMoney = hourlyEnergy.map(kWh => +(kWh * 0.15).toFixed(2)); // $ per hour
 
-    // HOURLY CHART (48h) with axis colors matching the bars
+    // HOURLY CHART (48h) with axis colors matching the bars (Energy Saved now uses OrangeRed)
     const ctxHourly = document.getElementById("hourlySavingsChart").getContext("2d");
     new Chart(ctxHourly, {
       type: "bar",
@@ -664,7 +664,7 @@
           {
             label: "Energy Saved (kWh)",
             data: hourlyEnergy,
-            backgroundColor: "rgba(0, 255, 0, 0.8)", // green
+            backgroundColor: "rgba(255, 69, 0, 0.8)", // OrangeRed
             yAxisID: "y",
           },
           {
@@ -679,13 +679,13 @@
         responsive: true,
         maintainAspectRatio: false,
         scales: {
-          // Left axis in green
+          // Left axis in OrangeRed
           y: {
             type: "linear",
             position: "left",
             beginAtZero: true,
             ticks: {
-              color: "rgb(0, 255, 0)" // match Energy Saved bar color
+              color: "rgb(255, 69, 0)" // match Energy Saved bar color (OrangeRed)
             },
           },
           // Right axis in gold
