@@ -184,21 +184,22 @@
           <canvas id="windSpeedChart"></canvas>
         </div>
       </div>
-      <!-- Card 5: Hourly Savings Image -->
+      <!-- Card 5: Hourly Energy & Money Savings -->
       <div class="card-custom">
-        <h2>Hourly Savings (Next 48h)</h2>
-        <div class="chart-container" style="overflow-y: auto;">
-          <img src="wind_savings_hourly.png" alt="Hourly Savings" style="width: 100%;">
+        <h2>Hourly Energy & Money Savings (48h)</h2>
+        <div class="chart-container">
+          <canvas id="hourlySavingsChart"></canvas>
         </div>
       </div>
 
-      <!-- Card 6: Daily Savings Image -->
+      <!-- Card 6: Daily Energy & Money Savings -->
       <div class="card-custom">
-        <h2>Daily Savings (Next 7 Days)</h2>
-        <div class="chart-container" style="overflow-y: auto;">
-          <img src="wind_savings_daily.png" alt="Daily Savings" style="width: 100%;">
+        <h2>Daily Energy & Money Savings (7d)</h2>
+        <div class="chart-container">
+          <canvas id="dailySavingsChart"></canvas>
         </div>
       </div>
+
     </div>
   </div>
 
@@ -639,6 +640,78 @@
       // ======= Send to Arduino automatically (no button) =======
       sendToArduino(dailyData, location, windData);
     });
+  // =====================
+  // HARDCODED SAVINGS DATA
+  // =====================
+
+  // 48-hour example (can be replaced with real data)
+  const hourlyLabels = Array.from({ length: 48 }, (_, i) => `Hr ${i + 1}`);
+  const hourlyEnergy = Array.from({ length: 48 }, () => Math.floor(Math.random() * 5 + 5)); // 5–10 kWh
+  const hourlyMoney = hourlyEnergy.map(kWh => +(kWh * 0.15).toFixed(2)); // $ per hour
+
+  const ctxHourly = document.getElementById("hourlySavingsChart").getContext("2d");
+  new Chart(ctxHourly, {
+    type: "bar",
+    data: {
+      labels: hourlyLabels,
+      datasets: [
+        {
+          label: "Energy Saved (kWh)",
+          data: hourlyEnergy,
+          backgroundColor: "rgba(75, 192, 192, 0.6)",
+        },
+        {
+          label: "Money Saved ($)",
+          data: hourlyMoney,
+          backgroundColor: "rgba(255, 205, 86, 0.6)",
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: { beginAtZero: true, ticks: { color: "#fff" } },
+        x: { ticks: { color: "#fff" } }
+      },
+      plugins: { legend: { labels: { color: "#fff" } } }
+    }
+  });
+
+  // 7-day example
+  const dailyLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const dailyEnergy = [55, 60, 52, 65, 58, 70, 68]; // kWh
+  const dailyMoney = dailyEnergy.map(kWh => +(kWh * 0.15).toFixed(2));
+
+  const ctxDaily = document.getElementById("dailySavingsChart").getContext("2d");
+  new Chart(ctxDaily, {
+    type: "bar",
+    data: {
+      labels: dailyLabels,
+      datasets: [
+        {
+          label: "Energy Saved (kWh)",
+          data: dailyEnergy,
+          backgroundColor: "rgba(153, 102, 255, 0.6)",
+        },
+        {
+          label: "Money Saved ($)",
+          data: dailyMoney,
+          backgroundColor: "rgba(255, 99, 132, 0.6)",
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: { beginAtZero: true, ticks: { color: "#fff" } },
+        x: { ticks: { color: "#fff" } }
+      },
+      plugins: { legend: { labels: { color: "#fff" } } }
+    }
+  });
+
 </script>
 
 </html>
