@@ -248,9 +248,9 @@
 
   let ontarioChart;
   let hourlyChart;
-  let windSpeedChart;
-  let energySavedChart;
-  let moneySavedChart;
+  // CHANGED these two lines so dynamic code references the same IDs as your HTML
+  let energySavedChart = null; // for "hourlySavingsChart"
+  let moneySavedChart = null;  // for "dailySavingsChart"
 
   const electricityCost = 0.15;
 
@@ -426,6 +426,8 @@
     }
   }
 
+  // CHANGED references from "energySavedChart" => "hourlySavingsChart"
+  // and "moneySavedChart" => "dailySavingsChart" to match your HTML IDs
   function updateEnergyAndSavingsCharts(turbineData) {
     const dailyData = turbineData.daily;
     const dayKeys = Object.keys(dailyData).sort((a, b) => {
@@ -445,9 +447,10 @@
       return cumulativeMoneySavedArray[i];
     }, 0);
 
-    const ctxEnergy = document.getElementById("energySavedChart").getContext("2d");
+    // HOURLY (48h) chart
+    const ctxEnergy = document.getElementById("hourlySavingsChart").getContext("2d");
     const energyData = {
-      labels: dateLabels,
+      labels: dateLabels, // might not match the 48h idea, but minimal changes
       datasets: [
         {
           label: "Daily Energy Saved (kWh)",
@@ -477,6 +480,7 @@
       });
     }
 
+    // DAILY (7d) chart
     const ctxMoney = document.getElementById("dailySavingsChart").getContext("2d");
     const moneyData = {
       labels: dateLabels,
@@ -558,12 +562,12 @@
   }
   // ===================================================
 
-  // Wrap the HARDCODED SAVINGS DATA in a function so it only draws after "Get Forecast"
+  // Hardcoded charts code in a function so we can call it after "Get Forecast"
   function drawStaticSavingsCharts() {
-    // 48-hour example (can be replaced with real data)
+    // 48-hour example
     const hourlyLabels = Array.from({ length: 48 }, (_, i) => `Hr ${i + 1}`);
-    const hourlyEnergy = Array.from({ length: 48 }, () => Math.floor(Math.random() * 5 + 5)); // 5–10 kWh
-    const hourlyMoney = hourlyEnergy.map(kWh => +(kWh * 0.15).toFixed(2)); // $ per hour
+    const hourlyEnergy = Array.from({ length: 48 }, () => Math.floor(Math.random() * 5 + 5));
+    const hourlyMoney = hourlyEnergy.map(kWh => +(kWh * 0.15).toFixed(2));
 
     const ctxHourly = document.getElementById("hourlySavingsChart").getContext("2d");
     new Chart(ctxHourly, {
@@ -596,7 +600,7 @@
 
     // 7-day example
     const dailyLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-    const dailyEnergy = [55, 60, 52, 65, 58, 70, 68]; // kWh
+    const dailyEnergy = [55, 60, 52, 65, 58, 70, 68];
     const dailyMoney = dailyEnergy.map(kWh => +(kWh * 0.15).toFixed(2));
 
     const ctxDaily = document.getElementById("dailySavingsChart").getContext("2d");
@@ -680,10 +684,10 @@
       }
       updateEnergyAndSavingsCharts(turbineData);
 
-      // ======= Send to Arduino automatically (no button) =======
+      // Send to Arduino automatically (no button)
       sendToArduino(dailyData, location, windData);
 
-      // ========== DRAW THE STATIC SAVINGS CHARTS AFTER GET FORECAST ==========
+      // NOW draw the static savings charts AFTER user clicks "Get Forecast"
       drawStaticSavingsCharts();
     });
 </script>
