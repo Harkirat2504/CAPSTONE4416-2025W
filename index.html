@@ -153,7 +153,7 @@
       <button type="submit" class="btn btn-primary">Get Forecast</button>
     </form>
 
-    <!-- Grid container with 6 cards -->
+    <!-- Grid container with 4 cards -->
     <div class="grid-container">
       <!-- Card 1: Daily Forecast List -->
       <div class="card-custom" id="forecastResults">
@@ -184,7 +184,6 @@
           <canvas id="windSpeedChart"></canvas>
         </div>
       </div>
-
       <!-- Card 5: Hourly Energy & Money Savings -->
       <div class="card-custom">
         <h2>Hourly Energy & Money Savings (48h)</h2>
@@ -206,13 +205,14 @@
 
   <!-- Bootstrap Bundle JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Your existing JS goes here below -->
 </body>
-
 <script>
   // =========================
   // 1) LIVE TORONTO CLOCK
   // =========================
   function updateTorontoTime() {
+    // Use the browser's Intl API to get time in the "America/Toronto" timezone
     const now = new Date();
     const options = {
       timeZone: "America/Toronto",
@@ -221,9 +221,11 @@
       second: "numeric",
       hour12: true,
     };
+    // Convert local time to Toronto time
     const torontoTimeString = now.toLocaleString("en-CA", options);
     document.getElementById("torontoClock").textContent = torontoTimeString;
   }
+  // Update the clock every second
   setInterval(updateTorontoTime, 1000);
   updateTorontoTime();
 
@@ -231,9 +233,10 @@
   // 2) AUTO-FILL FORM FIELDS WITH TODAY'S DATE (LOCAL)
   // =========================
   window.addEventListener("DOMContentLoaded", () => {
-    const now = new Date();
-    const currentMonth = now.getMonth() + 1;
+    const now = new Date(); // local date/time
+    const currentMonth = now.getMonth() + 1; // 0-based in JS
     const currentDay = now.getDate();
+
     document.getElementById("monthSelect").value = currentMonth;
     document.getElementById("daySelect").value = currentDay;
     document.getElementById("locationSelect").value = "Toronto";
@@ -246,14 +249,16 @@
   const windSpeedEndpoint = "https://capstone4416-2025w-machinelearningmodel.onrender.com/windspeed";
   const turbineEndpoint = "https://capstone4416-2025w-machinelearningmodel.onrender.com/turbine";
 
-  let ontarioChart;
-  let hourlyChart;
-  // CHANGED these two lines so dynamic code references the same IDs as your HTML
-  let energySavedChart = null; // for "hourlySavingsChart"
-  let moneySavedChart = null;  // for "dailySavingsChart"
+  let ontarioChart;    // Daily Ontario Demand (middle card)
+  let hourlyChart;     // Hourly forecast (searched location, right card)
+  let windSpeedChart;  // Wind speed forecast (new card)
+  let energySavedChart;  // Daily Energy Saved Chart
+  let moneySavedChart;   // Daily & Cumulative Money Saved Chart
 
+  // Constant: Electricity cost per kWh (in dollars)
   const electricityCost = 0.15;
 
+  // Generic function to fetch data from an endpoint
   async function fetchData(endpoint, params) {
     try {
       const queryString = new URLSearchParams(params).toString();
@@ -266,6 +271,7 @@
     }
   }
 
+  // Helper: generate date labels for daily forecast
   function generateDateLabels(startMonth, startDay, numDays) {
     const labels = [];
     const year = new Date().getFullYear();
@@ -280,6 +286,7 @@
     return labels;
   }
 
+  // Helper: generate hourly labels (1 to 24)
   function generateHourlyLabels(numHours) {
     const labels = [];
     for (let i = 1; i <= numHours; i++) {
@@ -288,6 +295,7 @@
     return labels;
   }
 
+  // Display daily forecast list for searched location (left card)
   function displayLocationResults(data, location, labels) {
     const resultsList = document.getElementById("resultsList");
     resultsList.innerHTML = "";
@@ -303,6 +311,7 @@
     document.getElementById("resultsTitle").textContent = `${location} Daily Forecast`;
   }
 
+  // Update daily bar graph for Ontario Demand (middle card)
   function updateOntarioChart(data, labels) {
     const sortedDays = Object.keys(data).sort();
     const ontarioValues = [];
@@ -345,6 +354,7 @@
     }
   }
 
+  // Update hourly chart for searched location (right card)
   function updateHourlyLocationChart(data, location, labels) {
     const sortedHours = Object.keys(data).sort((a, b) => parseInt(a) - parseInt(b));
     const locationHourlyValues = [];
@@ -387,6 +397,7 @@
     }
   }
 
+  // Update wind speed chart using data from /windspeed endpoint (new card)
   function updateWindSpeedChart(data) {
     const labels = data.map((item) => {
       const dt = new Date(item.datetime);
@@ -426,31 +437,38 @@
     }
   }
 
-  // CHANGED references from "energySavedChart" => "hourlySavingsChart"
-  // and "moneySavedChart" => "dailySavingsChart" to match your HTML IDs
+  // Update Daily Energy Saved Bar Chart and Daily & Cumulative Money Saved Line Chart
+  // using data from the /turbine endpoint.
   function updateEnergyAndSavingsCharts(turbineData) {
+    // Use daily data from turbineData.daily
     const dailyData = turbineData.daily;
+    // Sort day keys (e.g., "day_1", "day_2", etc.) numerically
     const dayKeys = Object.keys(dailyData).sort((a, b) => {
       return parseInt(a.split("_")[1]) - parseInt(b.split("_")[1]);
     });
+    // Create daily energy array using the sorted keys
     const dailyEnergyArray = dayKeys.map((key) => dailyData[key]);
 
+    // We'll use the same approach as daily forecast:
     const month = parseInt(document.getElementById("monthSelect").value);
     const start_day = parseInt(document.getElementById("daySelect").value);
+    // We have dayKeys.length days
     const dateLabels = generateDateLabels(month, start_day, dayKeys.length);
 
+    // Compute daily money saved using electricityCost (in $/kWh)
     const dailyMoneySavedArray = dailyEnergyArray.map((val) => val * electricityCost);
 
+    // Compute cumulative money saved over the days
     const cumulativeMoneySavedArray = [];
     dailyMoneySavedArray.reduce((acc, val, i) => {
       cumulativeMoneySavedArray[i] = acc + val;
       return cumulativeMoneySavedArray[i];
     }, 0);
 
-    // HOURLY (48h) chart
-    const ctxEnergy = document.getElementById("hourlySavingsChart").getContext("2d");
+    // --- Update Daily Energy Saved Chart (Bar Chart) ---
+    const ctxEnergy = document.getElementById("energySavedChart").getContext("2d");
     const energyData = {
-      labels: dateLabels, // might not match the 48h idea, but minimal changes
+      labels: dateLabels,
       datasets: [
         {
           label: "Daily Energy Saved (kWh)",
@@ -480,8 +498,8 @@
       });
     }
 
-    // DAILY (7d) chart
-    const ctxMoney = document.getElementById("dailySavingsChart").getContext("2d");
+    // --- Update Daily & Cumulative Money Saved Chart (Line Chart) ---
+    const ctxMoney = document.getElementById("moneySavedChart").getContext("2d");
     const moneyData = {
       labels: dateLabels,
       datasets: [
@@ -524,8 +542,11 @@
   }
 
   // ============== ARDUINO SEND FUNCTION ==============
+  // This function sends daily forecast (for chosen location) AND
+  // hourly wind speed data to a local Python server that writes to Arduino.
   async function sendToArduino(dailyData, location, windData) {
     try {
+      // 1) Extract daily forecast for the location
       const sortedDays = Object.keys(dailyData).sort();
       const dailyForecastArray = [];
       sortedDays.forEach(dayKey => {
@@ -538,17 +559,20 @@
         }
       });
 
+      // 2) Extract hourly wind speeds
       const windSpeedArray = windData.map(item => ({
         datetime: item.datetime,
         wind_speed_ms: item.wind_speed_ms
       }));
 
+      // 3) Build payload
       const payload = {
         location: location,
         dailyForecast: dailyForecastArray,
         windSpeed: windSpeedArray
       };
 
+      // 4) POST to local server (Python) that sends data over serial
       const arduinoResponse = await fetch("http://localhost:3000/sendToArduino", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -561,77 +585,6 @@
     }
   }
   // ===================================================
-
-  // Hardcoded charts code in a function so we can call it after "Get Forecast"
-  function drawStaticSavingsCharts() {
-    // 48-hour example
-    const hourlyLabels = Array.from({ length: 48 }, (_, i) => `Hr ${i + 1}`);
-    const hourlyEnergy = Array.from({ length: 48 }, () => Math.floor(Math.random() * 5 + 5));
-    const hourlyMoney = hourlyEnergy.map(kWh => +(kWh * 0.15).toFixed(2));
-
-    const ctxHourly = document.getElementById("hourlySavingsChart").getContext("2d");
-    new Chart(ctxHourly, {
-      type: "bar",
-      data: {
-        labels: hourlyLabels,
-        datasets: [
-          {
-            label: "Energy Saved (kWh)",
-            data: hourlyEnergy,
-            backgroundColor: "rgba(75, 192, 192, 0.6)",
-          },
-          {
-            label: "Money Saved ($)",
-            data: hourlyMoney,
-            backgroundColor: "rgba(255, 205, 86, 0.6)",
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          y: { beginAtZero: true, ticks: { color: "#fff" } },
-          x: { ticks: { color: "#fff" } }
-        },
-        plugins: { legend: { labels: { color: "#fff" } } }
-      }
-    });
-
-    // 7-day example
-    const dailyLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-    const dailyEnergy = [55, 60, 52, 65, 58, 70, 68];
-    const dailyMoney = dailyEnergy.map(kWh => +(kWh * 0.15).toFixed(2));
-
-    const ctxDaily = document.getElementById("dailySavingsChart").getContext("2d");
-    new Chart(ctxDaily, {
-      type: "bar",
-      data: {
-        labels: dailyLabels,
-        datasets: [
-          {
-            label: "Energy Saved (kWh)",
-            data: dailyEnergy,
-            backgroundColor: "rgba(153, 102, 255, 0.6)",
-          },
-          {
-            label: "Money Saved ($)",
-            data: dailyMoney,
-            backgroundColor: "rgba(255, 99, 132, 0.6)",
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          y: { beginAtZero: true, ticks: { color: "#fff" } },
-          x: { ticks: { color: "#fff" } }
-        },
-        plugins: { legend: { labels: { color: "#fff" } } }
-      }
-    });
-  }
 
   // On form submission, fetch daily, hourly, wind speed, and turbine data and update UI
   document
@@ -684,12 +637,81 @@
       }
       updateEnergyAndSavingsCharts(turbineData);
 
-      // Send to Arduino automatically (no button)
+      // ======= Send to Arduino automatically (no button) =======
       sendToArduino(dailyData, location, windData);
-
-      // NOW draw the static savings charts AFTER user clicks "Get Forecast"
-      drawStaticSavingsCharts();
     });
+  // =====================
+  // HARDCODED SAVINGS DATA
+  // =====================
+
+  // 48-hour example (can be replaced with real data)
+  const hourlyLabels = Array.from({ length: 48 }, (_, i) => `Hr ${i + 1}`);
+  const hourlyEnergy = Array.from({ length: 48 }, () => Math.floor(Math.random() * 5 + 5)); // 5–10 kWh
+  const hourlyMoney = hourlyEnergy.map(kWh => +(kWh * 0.15).toFixed(2)); // $ per hour
+
+  const ctxHourly = document.getElementById("hourlySavingsChart").getContext("2d");
+  new Chart(ctxHourly, {
+    type: "bar",
+    data: {
+      labels: hourlyLabels,
+      datasets: [
+        {
+          label: "Energy Saved (kWh)",
+          data: hourlyEnergy,
+          backgroundColor: "rgba(75, 192, 192, 0.6)",
+        },
+        {
+          label: "Money Saved ($)",
+          data: hourlyMoney,
+          backgroundColor: "rgba(255, 205, 86, 0.6)",
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: { beginAtZero: true, ticks: { color: "#fff" } },
+        x: { ticks: { color: "#fff" } }
+      },
+      plugins: { legend: { labels: { color: "#fff" } } }
+    }
+  });
+
+  // 7-day example
+  const dailyLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const dailyEnergy = [55, 60, 52, 65, 58, 70, 68]; // kWh
+  const dailyMoney = dailyEnergy.map(kWh => +(kWh * 0.15).toFixed(2));
+
+  const ctxDaily = document.getElementById("dailySavingsChart").getContext("2d");
+  new Chart(ctxDaily, {
+    type: "bar",
+    data: {
+      labels: dailyLabels,
+      datasets: [
+        {
+          label: "Energy Saved (kWh)",
+          data: dailyEnergy,
+          backgroundColor: "rgba(153, 102, 255, 0.6)",
+        },
+        {
+          label: "Money Saved ($)",
+          data: dailyMoney,
+          backgroundColor: "rgba(255, 99, 132, 0.6)",
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: { beginAtZero: true, ticks: { color: "#fff" } },
+        x: { ticks: { color: "#fff" } }
+      },
+      plugins: { legend: { labels: { color: "#fff" } } }
+    }
+  });
+
 </script>
 
 </html>
