@@ -657,52 +657,53 @@
     // HOURLY CHART (48h) with axis colors matching the bars (Energy Saved now uses OrangeRed)
     const ctxHourly = document.getElementById("hourlySavingsChart").getContext("2d");
     new Chart(ctxHourly, {
-      type: "bar",
-      data: {
-        labels: hourlyLabels,
-        datasets: [
-          {
-            label: "Energy Saved (kWh)",
-            data: hourlyEnergy,
-            backgroundColor: "rgba(255, 69, 0, 0.8)", // OrangeRed
-            yAxisID: "y",
-          },
-          {
-            label: "Money Saved ($)",
-            data: hourlyMoney,
-            backgroundColor: "rgba(255, 0, 0, 0.8)", // gold
-            yAxisID: "y1",
-          },
-        ],
+  type: "bar",
+  data: {
+    labels: hourlyLabels,
+    datasets: [
+      {
+        label: "Energy Saved (kWh)",
+        data: hourlyEnergy,
+        backgroundColor: "rgba(255, 0, 0, 0.8)",  // Red
+        yAxisID: "y",
       },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          // Left axis in OrangeRed
-          y: {
-            type: "linear",
-            position: "left",
-            beginAtZero: true,
-            ticks: {
-              color: "rgb(255, 0, 0)" // match Energy Saved bar color (OrangeRed)
-            },
-          },
-          // Right axis in gold
-          y1: {
-            type: "linear",
-            position: "right",
-            beginAtZero: true,
-            ticks: {
-              color: "rgb(255, 205, 86)" // match Money Saved bar color
-            },
-            grid: { drawOnChartArea: false },
-          },
-          x: { ticks: { color: "#fff" } },
+      {
+        label: "Money Saved ($)",
+        data: hourlyMoney,
+        backgroundColor: "rgba(255, 205, 86, 0.6)", // Yellow/Gold
+        yAxisID: "y1",
+      },
+    ],
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      y: {
+        type: "linear",
+        position: "left",
+        beginAtZero: true,
+        // Left axis in red:
+        ticks: {
+          color: "rgb(255, 0, 0)", 
         },
-        plugins: { legend: { labels: { color: "#fff" } } },
       },
-    });
+      y1: {
+        type: "linear",
+        position: "right",
+        beginAtZero: true,
+        // Right axis in yellow/gold:
+        ticks: {
+          color: "rgb(255, 205, 86)",
+        },
+        grid: { drawOnChartArea: false },
+      },
+      x: { ticks: { color: "#fff" } },
+    },
+    plugins: { legend: { labels: { color: "#fff" } } },
+  },
+});
+
 
     // 7-day example
     const dailyLabelsSavings = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
