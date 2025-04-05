@@ -200,13 +200,14 @@
           <canvas id="dailySavingsChart"></canvas>
         </div>
       </div>
+
     </div>
   </div>
 
   <!-- Bootstrap Bundle JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <!-- Your existing JS goes here below -->
 </body>
+
 <script>
   // =========================
   // 1) LIVE TORONTO CLOCK
@@ -476,7 +477,7 @@
       });
     }
 
-    const ctxMoney = document.getElementById("moneySavedChart").getContext("2d");
+    const ctxMoney = document.getElementById("dailySavingsChart").getContext("2d");
     const moneyData = {
       labels: dateLabels,
       datasets: [
@@ -557,12 +558,8 @@
   }
   // ===================================================
 
-  // Wrap the HARDCODED SAVINGS DATA code in a function
+  // Wrap the HARDCODED SAVINGS DATA in a function so it only draws after "Get Forecast"
   function drawStaticSavingsCharts() {
-    // =====================
-    // HARDCODED SAVINGS DATA
-    // =====================
-
     // 48-hour example (can be replaced with real data)
     const hourlyLabels = Array.from({ length: 48 }, (_, i) => `Hr ${i + 1}`);
     const hourlyEnergy = Array.from({ length: 48 }, () => Math.floor(Math.random() * 5 + 5)); // 5–10 kWh
@@ -600,7 +597,7 @@
     // 7-day example
     const dailyLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
     const dailyEnergy = [55, 60, 52, 65, 58, 70, 68]; // kWh
-    const dailyMoney2 = dailyEnergy.map(kWh => +(kWh * 0.15).toFixed(2));
+    const dailyMoney = dailyEnergy.map(kWh => +(kWh * 0.15).toFixed(2));
 
     const ctxDaily = document.getElementById("dailySavingsChart").getContext("2d");
     new Chart(ctxDaily, {
@@ -615,7 +612,7 @@
           },
           {
             label: "Money Saved ($)",
-            data: dailyMoney2,
+            data: dailyMoney,
             backgroundColor: "rgba(255, 99, 132, 0.6)",
           }
         ]
@@ -686,10 +683,9 @@
       // ======= Send to Arduino automatically (no button) =======
       sendToArduino(dailyData, location, windData);
 
-      // ========== NOW DRAW THE STATIC SAVINGS CHARTS ==========
+      // ========== DRAW THE STATIC SAVINGS CHARTS AFTER GET FORECAST ==========
       drawStaticSavingsCharts();
     });
 </script>
 
 </html>
-
