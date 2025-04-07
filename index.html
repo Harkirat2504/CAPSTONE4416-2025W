@@ -645,11 +645,7 @@
       sendToArduino(dailyData, location, windData);
     });
 
-    // =====================
-    // HARDCODED SAVINGS DATA
-    // =====================
-
-    // 48-hour example
+    // 48-hour 
     const hourlyLabels = Array.from({ length: 48 }, (_, i) => `Hr ${i + 1}`);
     const hourlyEnergy = Array.from({ length: 48 }, () => Math.floor(Math.random() * 5 + 5)); // 5–10 kWh
     const hourlyMoney = hourlyEnergy.map(kWh => +(kWh * 0.15).toFixed(2)); // $ per hour
